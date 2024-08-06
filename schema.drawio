@@ -1,0 +1,57 @@
+<mxfile host="app.diagrams.net" modified="2024-08-06T08:54:07.093Z" agent="Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" etag="dHgzejxOELHYAWoSGhL8" version="24.6.4" type="device">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
+    <mxGraphModel dx="1434" dy="761" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-24" value="" style="rounded=1;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="100" y="740" width="560" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-4" value="GTFS Data Real Time" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="40" y="40" width="200" height="200" as="geometry">
+            <mxRectangle x="40" y="40" width="160" height="30" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-8" value="&lt;div&gt;- Real time trains:&lt;/div&gt;&lt;div&gt;- Stations&lt;/div&gt;&lt;div&gt;- Stops&lt;/div&gt;&lt;div&gt;- Delays&lt;br&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="Zsn3IsoFpJ0N-b4485kA-4">
+          <mxGeometry x="10" y="30" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-7" value="&lt;div&gt;GTFS Data daily&lt;/div&gt;" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="320" y="40" width="200" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-9" value="Scheduled trains for next ___h ?" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="Zsn3IsoFpJ0N-b4485kA-7">
+          <mxGeometry y="40" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-10" value="&lt;div&gt;&lt;b&gt;Datasets&lt;/b&gt;&lt;/div&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="600" y="40" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-11" value="gares-de-voyageurs.csv" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Zsn3IsoFpJ0N-b4485kA-10">
+          <mxGeometry y="30" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-12" value="reglarite-mensuelle-tgv-nationale.csv" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Zsn3IsoFpJ0N-b4485kA-10">
+          <mxGeometry y="60" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-13" value="regularite-mensuelle-tgv-aqst.csv" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" vertex="1" parent="Zsn3IsoFpJ0N-b4485kA-10">
+          <mxGeometry y="90" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-15" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Data_Lake_Storage.svg;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="310" y="350" width="206.52" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-16" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/databases/SQL_Data_Warehouses.svg;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="50" y="630" width="64" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-17" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/integration/SQL_Data_Warehouses.svg;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="170" y="630" width="64" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-18" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/integration/SQL_Data_Warehouses.svg;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="290" y="630" width="64" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-21" value="ML Model delay predict (classification)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="210" y="790" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Zsn3IsoFpJ0N-b4485kA-22" value="ML Model delay predict (regression)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="430" y="790" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
