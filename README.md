@@ -12,6 +12,11 @@ During my profesional carreer, I worked as resource manager in the national Fren
 [...]
 
 
+SNCF GTFS TR is updated every 2mins, display from now to now+60mins
+
+
+
+
 
 
 ## Data sources
