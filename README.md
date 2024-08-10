@@ -13,7 +13,7 @@ During my profesional carreer, I worked as resource manager in the national Fren
 
 
 SNCF GTFS TR is updated every 2mins, display from now to now+60mins
-
+-> Update datas with gtfr_rf_updater wevery 2mins
 
 
 

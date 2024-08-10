@@ -1,3 +1,10 @@
+"""
+- Extract GTFS Real Time (RT) from SNCF open data, append existing data and save the new dataset.
+"""
+
+
+
+# LIB
 from datetime import datetime, timedelta
 from google.transit import gtfs_realtime_pb2
 import json
@@ -5,7 +12,7 @@ import os
 import pandas as pd
 import requests
 
-
+# VAR
 url = "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates" # TEMP
 gtfs_storage_path="../datas/gtfs/" # TEMP
 clean_data_path="../datas/cleaned/" # TEMP
@@ -152,20 +159,20 @@ def clean_feed_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def save_cleaned_feed_df(df: pd.DataFrame, gtfs_storage_path:str) -> None:
+def save_cleaned_feed_df(df: pd.DataFrame, clean_data_path:str) -> None:
     """
     
     """
     # Save DataFrame
-    df.to_csv(os.path.join(gtfs_storage_path, "cleaned_feed.csv"), index=False)
+    df.to_csv(os.path.join(clean_data_path, "cleaned_feed.csv"), index=False)
 
 
-def load_cleaned_feed_df(gtfs_storage_path:str) -> pd.DataFrame:
+def load_cleaned_feed_df(clean_data_path:str) -> pd.DataFrame:
     """
     
     """
     # Load DataFrame
-    df = pd.read_csv(os.path.join(gtfs_storage_path, "cleaned_feed.csv"))
+    df = pd.read_csv(os.path.join(clean_data_path, "cleaned_feed.csv"))
 
     return df
 
