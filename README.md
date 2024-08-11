@@ -15,8 +15,8 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 
 
 
-## Current working on:
-- utils/ next trains in station
+## Currently working on:
+- utils/ dataset updater
 
 
 

@@ -40,14 +40,14 @@ except:
 
 # FUNCTIONS
 
-def get_gtfs_files(url:str, gtfs_storage_path:str) -> None:
+def get_gtfs_files(gtfs_url:str, gtfs_storage_path:str) -> None:
     """
     
     """
 
     try:
         # Get the file
-        response = requests.get(url)
+        response = requests.get(gtfs_url)
         
         # Save the file
         with open("export_gtfs_voyages.zip", "wb") as file:
@@ -77,10 +77,10 @@ def get_stop_dictionary(gtfs_storage_path:str) -> None:
     df_stops = pd.read_csv(stop_filepath)
 
     # Filter columns
-    df_stops = df_stops[['stop_name', 'stop_id']]
+    df_stops = df_stops[['stop_id', 'stop_name']]
 
     # Get stop dictionary
-    stop_dict = dict(zip(df_stops['stop_name'], df_stops['stop_id']))
+    stop_dict = dict(zip(df_stops['stop_id'], df_stops['stop_name']))
 
     # Save dictionary
     with open(stop_dict_filepath, "w") as file:
@@ -100,10 +100,10 @@ def get_trip_dictionary(gtfs_storage_path:str) -> None:
     df_trips = pd.read_csv(trip_filepath)
 
     # Filter columns
-    df_trips = df_trips[['trip_headsign', 'trip_id']]
+    df_trips = df_trips[['trip_id', 'trip_headsign']]
 
     # Get trip dictionary
-    trip_dict = dict(zip(df_trips['trip_headsign'], df_trips['trip_id']))
+    trip_dict = dict(zip(df_trips['trip_id'], df_trips['trip_headsign']))
 
     # Save dictionary
     with open(trip_dict_filepath, "w") as file:
@@ -113,7 +113,7 @@ def get_trip_dictionary(gtfs_storage_path:str) -> None:
 
 
 if __name__ == "__main__":
-    get_gtfs_files(url, gtfs_storage_path)
+    get_gtfs_files(gtfs_url, gtfs_storage_path)
     get_stop_dictionary(gtfs_storage_path)
     get_trip_dictionary(gtfs_storage_path)
     print("GTFS data extracted and dictionaries generated")

@@ -4,14 +4,10 @@
 
 
 # LIB
-import ast
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
-from google.transit import gtfs_realtime_pb2
-import json
 import os
 import pandas as pd
-import requests
 from typing import Optional
 
 from gtfs_rt_updater import load_cleaned_feed_df
@@ -25,6 +21,9 @@ class CouldNotFindEnvVar(ValueError):
 
 
 # VAR
+# Load environment variables file
+load_dotenv(dotenv_path='./url.env')
+
 
 try:
     url = os.getenv("GTFS_RT_URL")
@@ -34,8 +33,6 @@ except:
     error =  CouldNotFindEnvVar("Some environment variables could not be found")
     error.add_note = "Please make sure that the following environment variables are set: GTFS_RT_URL, GTFS_STORAGE_PATH, CLEAN_DATA_PATH"
     raise error
-
-available_conversion_dicts = ["stop_dict", "trip_dict"]
 
 
 
@@ -104,8 +101,6 @@ def display_station_info(chosen_station: str, train_display_nb: int = 10, filter
 
 
     return df_departures, df_arrivals
-
-
 
 
 

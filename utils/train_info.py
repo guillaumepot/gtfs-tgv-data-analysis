@@ -36,9 +36,6 @@ except:
     error.add_note = "Please make sure that the following environment variables are set: GTFS_RT_URL, GTFS_STORAGE_PATH, CLEAN_DATA_PATH"
     raise error
 
-available_conversion_dicts = ["stop_dict", "trip_dict"]
-
-
 
 # FUNCTIONS
 

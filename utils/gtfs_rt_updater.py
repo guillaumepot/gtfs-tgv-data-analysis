@@ -4,7 +4,7 @@
 
 # LIB
 import ast
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 import json
@@ -62,7 +62,7 @@ def get_gtfs_rt_data(url:str) -> gtfs_realtime_pb2.FeedMessage:
 
 
 
-def get_conversion_dict(gtfs_storage_path:str, conversion_dict:str, invert:bool=True) -> dict:
+def get_conversion_dict(gtfs_storage_path:str, conversion_dict:str) -> dict:
     """
     
     """
@@ -80,11 +80,6 @@ def get_conversion_dict(gtfs_storage_path:str, conversion_dict:str, invert:bool=
         print("An error occurred:", str(e))
     
 
-    # Invert dictionary if requested
-    if invert:
-        inverted_dict = {v: k for k, v in requested_dictionary.items()}
-        return inverted_dict
-
     return requested_dictionary
 
 
@@ -96,7 +91,7 @@ def convert_feed_to_dataframe(feed: gtfs_realtime_pb2.FeedMessage, gtfs_storage_
     """
 
     # Get stop dictionary
-    stop_dict = get_conversion_dict(gtfs_storage_path, conversion_dict="stop_dict", invert=True)
+    stop_dict = get_conversion_dict(gtfs_storage_path, conversion_dict="stop_dict")
 
     # Initialize empty list to store data
     data = []
@@ -154,7 +149,7 @@ def clean_feed_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df['Destination'] = df['Stops'].apply(lambda x: x[-1][0])
 
     # Convert trip ID to Train number
-    trips_dict = get_conversion_dict(gtfs_storage_path, conversion_dict="trip_dict", invert=True) # trip dict
+    trips_dict = get_conversion_dict(gtfs_storage_path, conversion_dict="trip_dict") # trip dict
     df['trip_headsign'] = df['Trip ID'].map(trips_dict) # get trip headsign from trip dict
     df = df.drop(columns=['Trip ID']) # drop trip id column
     df.dropna(subset=['trip_headsign'], inplace=True) # drop rows with NaN values in trip_headsign column
@@ -174,8 +169,7 @@ def save_cleaned_feed_df(df: pd.DataFrame, clean_data_path:str) -> None:
     
     """
     # Save DataFrame
-    with open(os.path.join(clean_data_path, "cleaned_feed.csv"), "w") as file:
-        df.to_csv(os.path.join(clean_data_path, "cleaned_feed.csv"), index=False)
+    df.to_csv(os.path.join(clean_data_path, "cleaned_feed.csv"), index=False)
 
 
 def load_cleaned_feed_df(clean_data_path:str) -> pd.DataFrame:
