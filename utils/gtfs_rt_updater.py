@@ -2,36 +2,46 @@
 - Extract GTFS Real Time (RT) from SNCF open data, append existing data and save the new dataset.
 """
 
-
-
 # LIB
+import ast
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from google.transit import gtfs_realtime_pb2
 import json
 import os
 import pandas as pd
 import requests
+from typing import Optional
+
+
+# EXCEPTION CLASS
+class CouldNotFindEnvVar(ValueError):
+    def __init__(self, message:Optional[str]=None):
+        if message is None:
+            message = "Could not find environment variable"
+
 
 # VAR
-url = "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates" # TEMP
-gtfs_storage_path="../datas/gtfs/" # TEMP
-clean_data_path="../datas/cleaned/" # TEMP
-
-available_conversion_dicts = ["stop_dict", "trip_dict"]
+# Load environment variables file
+load_dotenv(dotenv_path='./url.env')
 
 
-# FUTUR URL VAR DECLARATION
-"""
+# Get environment variables
 try:
     url = os.getenv("GTFS_RT_URL")
     gtfs_storage_path = os.getenv("GTFS_STORAGE_PATH")
     clean_data_path = os.getenv("CLEAN_DATA_PATH")
 except:
-    raise ValueError("GTFS_STORAGE_PATH, GTFS_RT_URL or CLEAN_DATA_PATH environment variable not set")
- """
+    error =  CouldNotFindEnvVar("Some environment variables could not be found")
+    error.add_note = "Please make sure that the following environment variables are set: GTFS_RT_URL, GTFS_STORAGE_PATH, CLEAN_DATA_PATH"
+    raise error
+
+
+available_conversion_dicts = ["stop_dict", "trip_dict"]
 
 
 
+# FUNCTIONS
 
 def get_gtfs_rt_data(url:str) -> gtfs_realtime_pb2.FeedMessage:
     """
@@ -151,7 +161,7 @@ def clean_feed_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df['trip_headsign'] = df['trip_headsign'].astype('int') # convert trip headsign to integer
 
     # Convert Departure Date to datetime
-    df['Departure Date'] = pd.to_datetime(df['Departure Date'], format='%Y%m%d')
+    df['Departure Date'] = pd.to_datetime(df['Departure Date'], format='%Y%m%d').dt.date
 
     # Reorganize columns order
     df = df[['trip_headsign', 'Departure Date', 'Departure Time', 'Origin', 'Arrival Time', 'Destination', 'Stops']]
@@ -164,7 +174,8 @@ def save_cleaned_feed_df(df: pd.DataFrame, clean_data_path:str) -> None:
     
     """
     # Save DataFrame
-    df.to_csv(os.path.join(clean_data_path, "cleaned_feed.csv"), index=False)
+    with open(os.path.join(clean_data_path, "cleaned_feed.csv"), "w") as file:
+        df.to_csv(os.path.join(clean_data_path, "cleaned_feed.csv"), index=False)
 
 
 def load_cleaned_feed_df(clean_data_path:str) -> pd.DataFrame:
@@ -174,7 +185,23 @@ def load_cleaned_feed_df(clean_data_path:str) -> pd.DataFrame:
     # Load DataFrame
     df = pd.read_csv(os.path.join(clean_data_path, "cleaned_feed.csv"))
 
+    # Convert Stops column to list of lists
+    df['Stops'] = df['Stops'].apply(ast.literal_eval)
+
     return df
+
+
+
+def create_feed() -> None:
+    """
+    
+    """
+    feed = get_gtfs_rt_data(url)
+    df = convert_feed_to_dataframe(feed, gtfs_storage_path)
+    df = clean_feed_dataframe(df)
+    print('df len:', len(df))
+    save_cleaned_feed_df(df, clean_data_path)
+
 
 
 
@@ -182,20 +209,32 @@ def update_feed() -> None:
     """
     
     """
+    # Get new data
     feed = get_gtfs_rt_data(url)
-    df = convert_feed_to_dataframe(feed, gtfs_storage_path)
-    df = clean_feed_dataframe(df)
+    df_new_data = convert_feed_to_dataframe(feed, gtfs_storage_path)
+    df_new_data = clean_feed_dataframe(df_new_data)
 
+    # Load existing data
     base_df = load_cleaned_feed_df(clean_data_path)
 
-    # Join new dataset with base dataset
-    new_df = pd.concat([base_df, df])
-    # Drop duplicates based on trip_headsign and Departure Date columns, keeping the last one
-    new_df.drop_duplicates(subset=['trip_headsign', 'Departure Date'], keep='last', inplace=True)
+    # Append new data to existing data
+    df = pd.concat([base_df, df_new_data], ignore_index=True)
 
-    # Save new dataset
-    save_cleaned_feed_df(new_df, clean_data_path)
+    # Convert Departure Date to datetime for proper comparison
+    df['Departure Date'] = pd.to_datetime(df['Departure Date'])
+    # Remove duplicated based on trip_headsign and Departure Date columns
+    df = df.drop_duplicates(subset=['trip_headsign', 'Departure Date'], keep='last')
+
+    # Save new data
+    save_cleaned_feed_df(df, clean_data_path)
+
+
+
 
 
 if __name__ == "__main__":
-    update_feed()
+    user_choice = input("Do you want to create or update the feed?: (c/u) ")
+    if user_choice.lower() == "c":
+        create_feed()
+    elif user_choice.lower() == "u":
+        update_feed()

@@ -3,25 +3,42 @@
 """
 
 # LIB
+from dotenv import load_dotenv
 import json
 import os
 import pandas as pd
 import requests
+from typing import Optional
 import zipfile
 
 
-# VAR
-url = "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip" # TEMP
-gtfs_storage_path="../datas/gtfs/" # TEMP
+# EXCEPTION CLASS
+class CouldNotFindEnvVar(ValueError):
+    def __init__(self, message:Optional[str]=None):
+        if message is None:
+            message = "Could not find environment variable"
 
-# FUTUR URL VAR DECLARATION
-"""
+
+# VAR
+
+
+# Load environment variables file
+load_dotenv(dotenv_path='./url.env')
+
+
 try:
     gtfs_url = os.getenv("GTFS_URL")
     gtfs_storage_path = os.getenv("GTFS_STORAGE_PATH")
 except:
-    raise ValueError("GTFS_STORAGE_PATH or GTFS_URL environment variable not set")
-"""
+    error =  CouldNotFindEnvVar("Some environment variables could not be found")
+    error.add_note = "Please make sure that the following environment variables are set: GTFS_RT_URL, GTFS_STORAGE_PATH"
+    raise error
+
+
+
+
+
+# FUNCTIONS
 
 def get_gtfs_files(url:str, gtfs_storage_path:str) -> None:
     """

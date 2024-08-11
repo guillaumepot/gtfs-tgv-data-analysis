@@ -6,14 +6,27 @@ I've a story to tell you.
 During my profesional carreer, I worked as resource manager in the national French railway company: SNCF. My role was to [..]
 
 
-
-
 ## What is GTFS ?
 [...]
 
 
 SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 -> Update datas with gtfr_rf_updater wevery 2mins
+
+
+
+## Current working on:
+- utils/ next trains in station
+
+
+
+
+## Repo Architecture
+
+|
+|
+|--- notebooks <- Draft code to explore data files
+|
 
 
 
