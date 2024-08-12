@@ -15,6 +15,7 @@ services:
       - POSTGRES_DB=train_delay_db    # Avoid changing this, unless you know what you are doing
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     # Comment ports if you don't want the database to be accessible from the host
     ports:
       - "5432:5432" # Comment this line for production to avoid exposing the database
