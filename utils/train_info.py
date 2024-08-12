@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 from typing import Optional
 
-from gtfs_rt_updater import load_cleaned_feed_df
+from data_updater import load_cleaned_feed_df
 
 
 # EXCEPTION CLASS

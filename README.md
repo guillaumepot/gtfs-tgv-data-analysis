@@ -11,7 +11,7 @@ During my profesional carreer, I worked as resource manager in the national Fren
 
 
 SNCF GTFS TR is updated every 2mins, display from now to now+60mins
--> Update datas with gtfr_rf_updater wevery 2mins
+-> Update datas with gtfr_rf_updater every 6hours ? 
 
 
 
@@ -37,7 +37,7 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 Train stations:
 https://ressources.data.sncf.com/explore/dataset/gares-de-voyageurs/information/?disjunctive.segment_drg
 
-Station occupation: [Todo]
+Station occupation:
 https://ressources.data.sncf.com/explore/dataset/frequentation-gares/information/?disjunctive.nom_gare&disjunctive.code_postal&sort=nom_gare
 
 TGV global ponctuality:
@@ -46,10 +46,8 @@ https://ressources.data.sncf.com/explore/dataset/reglarite-mensuelle-tgv-nationa
 TGV by route ponctuality:
 https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/information/
 
-
 GTFS:
 https://ressources.data.sncf.com/explore/dataset/horaires-des-train-voyages-tgvinouiouigo/information/
-
 
 Traffic informations:
 https://www.sncf-voyageurs.com/fr/voyagez-avec-nous/horaires-et-itineraires/

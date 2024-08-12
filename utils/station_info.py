@@ -10,7 +10,7 @@ import os
 import pandas as pd
 from typing import Optional
 
-from gtfs_rt_updater import load_cleaned_feed_df
+from data_updater import load_cleaned_feed_df
 
 
 # EXCEPTION CLASS
@@ -79,17 +79,19 @@ def display_station_info(chosen_station: str, train_display_nb: int = 10, filter
     # Convert the list to a new DataFrame
     df = pd.DataFrame(datas, columns=['trip_headsign', 'arrival_time', 'arrival_delay', 'departure_time', 'departure_delay'])
     
-    # Filter according to the next 'train_display_nb' trains
-    df = df.head(train_display_nb)
 
     # Generate df_departures and df_arrivals
     df_departures = df.drop(columns=['arrival_time', 'arrival_delay'])
     df_departures = df_departures[df_departures['departure_time'] != 0]
     df_departures['departure_time'] = pd.to_datetime(df_departures['departure_time'], format='%H:%M:%S').dt.time
+    # Filter according to the next 'train_display_nb' trains
+    df_departures = df_departures.head(train_display_nb)
 
     df_arrivals = df.drop(columns=['departure_time', 'departure_delay'])
     df_arrivals = df_arrivals[df_arrivals['arrival_time'] != 0]
     df_arrivals['arrival_time'] = pd.to_datetime(df_arrivals['arrival_time'], format='%H:%M:%S').dt.time
+    # Filter according to the next 'train_display_nb' trains
+    df_arrivals = df_arrivals.head(train_display_nb)
 
     if filter_from_now:
         # Get the current time without microseconds
