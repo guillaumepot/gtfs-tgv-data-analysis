@@ -333,7 +333,7 @@ def get_trip_dictionary(gtfs_storage_path:str) -> None:
 
 
 
-def download_raw_datas(data_sources_url_json_path:str, raw_data_path:str) -> None:
+def download_raw_datas(data_sources_url_json_path:str, raw_data_path:str) -> list:
     """
 
     """
@@ -343,19 +343,83 @@ def download_raw_datas(data_sources_url_json_path:str, raw_data_path:str) -> Non
         url_dict = json.load(f)
 
 
+
+    # Download the files and add items to a new dictionary
+    filepath_dict:dict[str,str] = {}
+
     for key, url in url_dict.items():
         file = requests.get(url)
         with open(f"{raw_data_path}/{key}.csv", "wb") as f:
             f.write(file.content)
 
+        filepath_dict[key] = f"{raw_data_path}/{key}.csv"
+
+
+
+    return filepath_dict
 
 
 
 
+def clean_raw_datas(clean_data_path:str, raw_data_filepath_dict:dict[str,str]) -> None:
+    """
+
+    """
+
+    def clean_train_stations(filepath) -> None:
+        """
+        
+        """
+        df = pd.read_csv(filepath,
+                         header=0,
+                         sep=";"
+                         )
+
+        df.loc[df['Nom'] == 'Neuilly Porte Maillot RER E', 'Position géographique'] = df.loc[df['Nom'] == 'Neuilly Porte Maillot RER E', 'Position géographique'].fillna('48.877983, 2.284516')
+        df.dropna(subset=['Position géographique'], inplace=True)
+        savepath = f"{clean_data_path}/train_stations.csv"
+        df.to_csv(savepath, sep=";", index=False)
 
 
 
+    def clean_station_occupation(filepath) -> None:
+        """
+        
+        """
+        pass
 
+
+
+    def clean_tgv_ponctuality_global(filepath) -> None:
+        """
+        
+        """
+        df = pd.read_csv(filepath, sep=";")
+        savepath = f"{clean_data_path}/tgv_ponctuality_global.csv"
+        df.to_csv(savepath, sep=";", index=False)
+
+
+
+    def clean_tgv_ponctuality_by_route(filepath) -> None:
+        """
+        
+        """
+        df = pd.read_csv(filepath, sep=";")
+        df.drop(columns=["Commentaire annulations", "Commentaire retards au départ", "Commentaire retards à l'arrivée"], inplace=True)
+        savepath = f"{clean_data_path}/tgv_ponctuality_by_route.csv"
+        df.to_csv(savepath, sep=";", index=False)
+
+
+
+    for key, value in raw_data_filepath_dict.items():
+        if "train_stations" in key:
+            clean_train_stations(value)
+        if "station_occupation" in key:
+            clean_station_occupation(value)
+        if "tgv_ponctuality_global" in key:
+            clean_tgv_ponctuality_global(value)
+        if "tgv_ponctuality_by_route" in key:
+            clean_tgv_ponctuality_by_route(value)
 
 
 
@@ -386,8 +450,10 @@ if __name__ == "__main__":
 
         elif action_choice == 3:
             print("Datasets update in progress...")
-            download_raw_datas(datasources_url_json_path, raw_data_path)
+            filepath_dict = download_raw_datas(datasources_url_json_path, raw_data_path)
+            clean_raw_datas(clean_data_path, filepath_dict)
             print("Datasets updated")
+
 
         else:
             raise ValueError("Invalid action choice")
