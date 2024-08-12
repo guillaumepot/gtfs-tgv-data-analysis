@@ -24,12 +24,9 @@ IMG TO ADD
 
 
 ## Table of Contents [WIP]
-- [Repository Architecture](#repository-architecture)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Changelogs](#Changelogs)
-- [Roadmap](#roadmap)
-
+- [Introduction](#introduction)
+- [What is GTFS](#what-is-gtfs)
+-
 
 ---
 
@@ -44,7 +41,7 @@ During my profesional carreer, I worked as resource manager in the national Fren
 ---
 
 
-## What is GTFS ? [WIP]
+## What is GTFS [WIP]
 
 
 SNCF GTFS TR is updated every 2mins, display from now to now+60mins
