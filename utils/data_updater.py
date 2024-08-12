@@ -386,9 +386,12 @@ def clean_raw_datas(clean_data_path:str, raw_data_filepath_dict:dict[str,str]) -
         """
         
         """
-        pass
+        df = pd.read_csv(filepath, sep=";")
+        df.drop(columns=["Segmentation DRG"], inplace=True)
+        savepath = f"{clean_data_path}/station_occupation.csv"
+        df.to_csv(savepath, sep=";", index=False)
 
-
+        
 
     def clean_tgv_ponctuality_global(filepath) -> None:
         """
@@ -420,7 +423,6 @@ def clean_raw_datas(clean_data_path:str, raw_data_filepath_dict:dict[str,str]) -
             clean_tgv_ponctuality_global(value)
         if "tgv_ponctuality_by_route" in key:
             clean_tgv_ponctuality_by_route(value)
-
 
 
 

@@ -1,35 +1,126 @@
-# france_train_delay_prediction
+# HighSpeed Train delay prediction (France | TGV)
+
 Can We predict delay for TGV trains in France ?
 
+
+<!-- 
+IMG TO ADD 
+<img src="./media/img.jpeg" width="350" height="350">
+-->
+
+
+---
+
+
+## Project Information
+
+- **Version**: 0.0.1dev
+- **Development Stage**: Dev
+- **Author**: Guillaume Pot
+- **Contact Information**: guillaumepot.pro@outlook.com
+
+
+---
+
+
+## Table of Contents [WIP]
+- [Repository Architecture](#repository-architecture)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Changelogs](#Changelogs)
+- [Roadmap](#roadmap)
+
+
+---
+
+
+## Introduction
 
 I've a story to tell you.
 During my profesional carreer, I worked as resource manager in the national French railway company: SNCF. My role was to [..]
 
 
-## What is GTFS ?
-[...]
+
+---
+
+
+## What is GTFS ? [WIP]
 
 
 SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 -> Update datas with gtfr_rf_updater every 6hours ? 
 
+---
 
 
-## Currently working on:
-- utils/ dataset updater
+## Current Features [WIP]
+
+- 
+
+---
 
 
+## Repo Architecture [WIP]
 
-
-## Repo Architecture
+```
 
 |
+├── notebooks <- Draft code to explore data files
 |
-|--- notebooks <- Draft code to explore data files
+└── postgres <- Postgres database to store GTFS RT datas
+
+```
+
+
+---
+
+
+## Branch logic [WIP]
+
+```
+
+├── main    # Main branch, contains releases
+|   
+├── build   # Used to build releases
 |
+├── debug   # Debug branch
+|
+└── develop # New features development branch
+
+```
+
+
+---
+
+
+## Installation [WIP]
+- 
 
 
 
+---
+
+
+## Changelogs [WIP]
+
+-
+
+
+
+---
+
+
+## Roadmap [WIP]
+
+```
+
+-
+
+```
+
+
+
+---
 
 
 ## Data sources
