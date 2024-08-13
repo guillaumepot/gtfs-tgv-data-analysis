@@ -3,4 +3,4 @@
 - Pipeline update datasets
 - Start postgres & pgadmin container
 - Create script to make db tables (gtfs datas)
-- Pipeline create/update GTFS datas (first create, then update if created env var exists ?)
+- Pipeline create/update GTFS RT datas (first create, then update if created env var exists ?)
