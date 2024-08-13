@@ -1,5 +1,5 @@
 # The following docker-compose file is used to deploy a postgres database container
-# It contains one containers (Postgres) and one optional container (PG Admin).
+# It contains one container (Postgres) and one optional container (PG Admin).
 
 
 services:
@@ -25,8 +25,8 @@ services:
       interval: 60s
       timeout: 10s
       retries: 3
-    # networks:
-    #   - app_network
+    networks:
+      - app_network
 
 
 
@@ -43,11 +43,11 @@ services:
     ports:
       - "5050:80"
     restart: always
-  #   networks:
-  #     - app_network
+    networks:
+      - app_network
 
 
 # Networks
-# networks:
-#   app_network:
-#     external: true
+networks:
+  app_network:
+    driver: bridge
