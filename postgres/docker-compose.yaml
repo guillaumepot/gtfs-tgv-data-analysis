@@ -31,15 +31,18 @@ services:
 
 
   # Optional: PG Admin
-  # container_pgadmin:
-  #   image: dpage/pgadmin4:latest
-  #   container_name: pgadmin
-  #   environment:
-  #     - PGADMIN_DEFAULT_EMAIL=mail@mail.com
-  #     - PGADMIN_DEFAULT_PASSWORD=password
-  #   ports:
-  #     - "5050:80"
-  #   restart: always
+  container_pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=mail@mail.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_data/sessions:/var/lib/pgadmin/sessions
+    ports:
+      - "5050:80"
+    restart: always
   #   networks:
   #     - app_network
 

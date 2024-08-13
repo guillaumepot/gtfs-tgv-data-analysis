@@ -2,3 +2,7 @@
 __pycache__/
 # ignore virtualenv
 venv/
+
+# ignore dev volumes
+pgadmin_data/
+postgres_data/
