@@ -1,0 +1,109 @@
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+# LIB
+from google.transit import gtfs_realtime_pb2
+import requests
+import time
+import unittest
+from unittest.mock import patch, Mock
+
+# FUNCTION
+@data_loader
+def get_gtfs_rt_data(*args, **kwargs) -> gtfs_realtime_pb2.FeedMessage:
+
+def get_gtfs_rt_data(gtfs_rt_url:str, verbose=True) -> gtfs_realtime_pb2.FeedMessage:
+
+    """
+    Fetches GTFS-RT data from the given URL.
+    Args:
+        gtfs_rt_url (str): The URL to fetch the GTFS-RT data from.
+        verbose (bool, optional): Whether to print verbose output. Defaults to True.
+    Returns:
+        gtfs_realtime_pb2.FeedMessage: The parsed GTFS-RT data.
+    Raises:
+        ValueError: If an error occurs while fetching the GTFS-RT data.
+    """
+
+
+    def fetch_data(url:str) -> requests.Response:
+        """
+        Fetches GTFS-RT data from the given URL.
+        Args:
+            url (str): The URL to fetch the data from.
+        Returns:
+            requests.Response: The response object containing the fetched data.
+        Raises:
+            requests.exceptions.RequestException: If an error occurs while fetching the data.
+        """
+        try:
+            if verbose:
+                print("Requesting GTFS-RT data...")
+            response = requests.get(url)
+            response.raise_for_status()
+            return response
+        
+        except requests.exceptions.RequestException as e:
+            if verbose:
+                print(f"Error while fetching GTFS-RT data: {e}")
+            return None
+
+
+    if verbose:
+        print(f"Fetching GTFS-RT data from {gtfs_rt_url}...")
+
+    # First attempt to fetch data
+    response = fetch_data(gtfs_rt_url)
+
+
+    # If the first attempt fails, retry after 180 seconds
+    if response is None or response.status_code != 200:
+        if verbose:
+            print("Retrying request in 180 seconds...")
+        time.sleep(180)
+        response = fetch_data(gtfs_rt_url)
+
+        if response is None or response.status_code != 200:
+            if verbose:
+                print("Second attempt failed, aborting...")
+            raise ValueError(f"Error while fetching GTFS-RT data: {response.status_code if response else 'No response'}")
+
+
+    # Parse the GTFS-RT data
+    if verbose:
+        print("Parsing GTFS-RT data...")
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.ParseFromString(response.content)
+
+
+    if verbose:
+        print("GTFS-RT data fetched successfully")
+
+    return feed
+
+
+
+# TEST
+@test
+def test_get_gtfs_rt_data():
+    """
+    Test for get_gtfs_rt_data function.
+    """
+    sample_gtfs_rt_data = b'\x0a\x0b\n\x07\x08\x01\x10\x01\x18\x01'
+    mock_url = 'http://mockurl.com/gtfs-rt'
+
+    with patch('requests.get') as mock_get:
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = sample_gtfs_rt_data
+        mock_get.return_value = mock_response
+
+        # Call the function
+        feed_message = get_gtfs_rt_data(mock_url, verbose=False)
+
+        # Assertions
+        assert isinstance(feed_message, gtfs_realtime_pb2.FeedMessage), 'The output is not a FeedMessage instance'
+        assert feed_message.SerializeToString() == sample_gtfs_rt_data, 'The parsed data does not match the sample data'

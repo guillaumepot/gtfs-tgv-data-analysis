@@ -6,7 +6,6 @@ if 'test' not in globals():
 
 # LIB
 from google.transit import gtfs_realtime_pb2
-from google.protobuf.json_format import MessageToDict
 import requests
 import time
 import unittest
@@ -47,7 +46,7 @@ def get_gtfs_rt_data(*args, **kwargs) -> gtfs_realtime_pb2.FeedMessage:
 
 
     # Args
-    gtfs_rt_url:str="https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates"
+    gtfs_rt_url:str=https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates"
 
     # Get response
     response = fetch_data(gtfs_rt_url)
@@ -55,12 +54,10 @@ def get_gtfs_rt_data(*args, **kwargs) -> gtfs_realtime_pb2.FeedMessage:
     # Parse GTFS RT Datas
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(response.content)
-    
-    # Convert FeedMessage to dictionary
-    feed_dict = MessageToDict(feed)
-    
-    
-    return feed_dict
+
+    return feed
+
+
 
 # TEST
 @test
@@ -69,7 +66,3 @@ def test_output(output, *args) -> None:
     Template code for testing the output of the block.
     """
     assert output is not None, 'The output is undefined'
-    
-
-    # Perform additional checks on the feed if necessary
-    assert isinstance(output, dict), 'The output is not a valid dictionary'

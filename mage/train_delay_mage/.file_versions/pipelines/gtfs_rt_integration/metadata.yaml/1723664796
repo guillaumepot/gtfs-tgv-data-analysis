@@ -21,36 +21,19 @@ blocks:
 - all_upstream_blocks_executed: true
   color: null
   configuration: {}
-  downstream_blocks:
-  - export_gtfr_rt
+  downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
   name: Prepare GTFS RT datas
   retry_config: null
-  status: updated
+  status: failed
   timeout: null
   type: transformer
   upstream_blocks:
   - get_gtfs_rt
   uuid: prepare_gtfs_rt_datas
-- all_upstream_blocks_executed: false
-  color: null
-  configuration: {}
-  downstream_blocks: []
-  executor_config: null
-  executor_type: local_python
-  has_callback: false
-  language: python
-  name: export_gtfr_rt
-  retry_config: null
-  status: updated
-  timeout: null
-  type: data_exporter
-  upstream_blocks:
-  - prepare_gtfs_rt_datas
-  uuid: export_gtfr_rt
 cache_block_output_in_memory: false
 callbacks: []
 concurrency_config: {}

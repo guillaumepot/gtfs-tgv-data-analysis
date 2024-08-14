@@ -71,5 +71,7 @@ def test_output(output, *args) -> None:
     assert output is not None, 'The output is undefined'
     
 
+
     # Perform additional checks on the feed if necessary
-    assert isinstance(output, dict), 'The output is not a valid dictionary'
+    assert isinstance(feed, gtfs_realtime_pb2.FeedMessage), 'The output is not a valid FeedMessage'
+    """

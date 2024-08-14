@@ -72,4 +72,4 @@ def test_output(output, *args) -> None:
     
 
     # Perform additional checks on the feed if necessary
-    assert isinstance(output, dict), 'The output is not a valid dictionary'
+    assert isinstance(feed_dict, dictionary), 'The output is not a valid dictionary'

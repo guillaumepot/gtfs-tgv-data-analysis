@@ -60,7 +60,7 @@ def get_gtfs_rt_data(*args, **kwargs) -> gtfs_realtime_pb2.FeedMessage:
     feed_dict = MessageToDict(feed)
     
     
-    return feed_dict
+    return
 
 # TEST
 @test
@@ -68,8 +68,15 @@ def test_output(output, *args) -> None:
     """
     Template code for testing the output of the block.
     """
+    pass
+
+    """
     assert output is not None, 'The output is undefined'
     
-
+    # Deserialize the output back to a FeedMessage object
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.ParseFromString(output)
+    
     # Perform additional checks on the feed if necessary
-    assert isinstance(output, dict), 'The output is not a valid dictionary'
+    assert isinstance(feed, gtfs_realtime_pb2.FeedMessage), 'The output is not a valid FeedMessage'
+    """

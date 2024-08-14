@@ -29,13 +29,13 @@ blocks:
   language: python
   name: Prepare GTFS RT datas
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: transformer
   upstream_blocks:
   - get_gtfs_rt
   uuid: prepare_gtfs_rt_datas
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks: []
@@ -45,7 +45,7 @@ blocks:
   language: python
   name: export_gtfr_rt
   retry_config: null
-  status: updated
+  status: not_executed
   timeout: null
   type: data_exporter
   upstream_blocks:
