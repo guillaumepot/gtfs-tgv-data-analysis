@@ -1,4 +1,4 @@
-- Create Mage container
+- Create Prefect container
 - Pipeline update GTFS
 - Pipeline update datasets
 - Start postgres & pgadmin container
