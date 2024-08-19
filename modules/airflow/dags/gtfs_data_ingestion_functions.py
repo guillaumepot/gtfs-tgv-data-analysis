@@ -1,13 +1,13 @@
 """
-
+Contains functions that are used by the tasks in the Airflow dags
 """
 
 
 # LIB
 import asyncpg
-import datetime
 from google.transit import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToDict
+import json
 import os
 import requests
 
@@ -22,7 +22,7 @@ postgres_db = os.getenv('DATA_PG_DB', 'train_delay_db')
 
 
 # COMMON FUNCTIONS
-async def connect_to_postgres() -> asyncpg.connection:
+def connect_to_postgres() -> asyncpg.connection:
     """
     Connects to the database using the provided credentials.
 
@@ -30,7 +30,7 @@ async def connect_to_postgres() -> asyncpg.connection:
         asyncpg.connection: The connection object representing the connection to the database.
     """
 
-    return await asyncpg.connect(user=postgres_user,
+    return asyncpg.connect(user=postgres_user,
                                    password=postgres_password,
                                    database=postgres_db,
                                    host=postgres_host,
@@ -41,7 +41,7 @@ async def connect_to_postgres() -> asyncpg.connection:
 
 
 # TASKS FUNCTIONS
-def get_gtfs_rt_data(gtfs_rt_url:str) -> gtfs_realtime_pb2.FeedMessage:
+def get_gtfs_rt_data(gtfs_rt_url:str) -> str:
     """
     Fetches GTFS-RT data from the given URL.
     Args:
@@ -83,19 +83,29 @@ def get_gtfs_rt_data(gtfs_rt_url:str) -> gtfs_realtime_pb2.FeedMessage:
     # Convert FeedMessage to dictionary
     feed_dict = MessageToDict(feed)
     
+    # Serialize dictionary to JSON string
+    feed_json = json.dumps(feed_dict)
     
-    return feed_dict
+    return feed_json
 
 
-def transform_feed(feed_dict:dict) -> list:
+def transform_feed(feed_json:str) -> list:
     """
     Transform the feed dictionary into a list of trip data and stop times data.
+    
     Parameters:
     - feed_dict (dict): The dictionary containing the feed data.
+    
     Returns:
-    - all_trip_data (list): A list of dictionaries containing trip data.
-    - all_stop_times_data (list): A list of dictionaries containing stop times data.
+    - tuple: A tuple containing two lists:
+        - all_trip_data (list): A list of dictionaries containing trip data.
+        - all_stop_times_data (list): A list of dictionaries containing stop times data.
     """
+
+    # Convert string to dictionary (from Xcom, the feed_dict is a string)
+    feed_dict = json.loads(feed_json)
+
+
     # Remove Header key
     del feed_dict['header']
     # Remove entity key and keep the list value as dictionary
@@ -145,15 +155,50 @@ def transform_feed(feed_dict:dict) -> list:
     return all_trip_data, all_stop_times_data
 
 
-async def push_feed_data_to_db(feed_data:list, table:str) -> None:
+def push_feed_data_to_db(feed_data:list, table:str) -> None:
     """
-    
+    Asynchronously pushes feed data to the specified database table.
+    Parameters:
+    - feed_data (list): A list of dictionaries containing the feed data to be inserted into the table.
+    - table (str): The name of the table where the feed data will be inserted.
+    Returns:
+    None
+    Raises:
+    ValueError: If there is an error while connecting to the database.
     """
     try:
-        conn = await connect_to_postgres()
+        conn = connect_to_postgres()
     except:
         raise ValueError("Error while connecting to the database")
     else:
-        pass
+        # trip table update
+        if table == 'trips_gtfs_rt':
+            for trip in feed_data:
+                conn.execute(f"""
+                    INSERT INTO {table} (trip_id, departure_date, departure_time)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (trip_id, departure_date)
+                    DO UPDATE SET departure_time = EXCLUDED.departure_time
+                    WHERE {table}.departure_time <> EXCLUDED.departure_time;
+                """, trip['trip_id'], trip['departure_date'], trip['departure_time'])
+
+        # stop_time_update table update
+        if table == 'stop_time_update_gtfs_rt':
+            for stop_time in feed_data:
+                conn.execute(f"""
+                    INSERT INTO {table} (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (trip_id, stop_id)
+                    DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
+                                  departure_time = EXCLUDED.departure_time,
+                                  delay_arrival = EXCLUDED.delay_arrival,
+                                  delay_departure = EXCLUDED.delay_departure
+                                  update_time = EXCLUDED.update_time
+                    WHERE {table}.arrival_time <> EXCLUDED.arrival_time
+                    OR {table}.departure_time <> EXCLUDED.departure_time
+                    OR {table}.delay_arrival <> EXCLUDED.delay_arrival
+                    OR {table}.delay_departure <> EXCLUDED.delay_departure;
+                """, stop_time['trip_id'], stop_time['stop_id'], stop_time['arrival_time'], stop_time['departure_time'], stop_time['delay_arrival'], stop_time['delay_departure'], stop_time['update_time'])
+
     finally:
         conn.close()

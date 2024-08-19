@@ -1,12 +1,21 @@
-# Define a common configuration for Airflow services, using YAML anchor &airflow-common for reuse.
+# Airflow docker compose.
+# - Contains services for Airflow webserver, scheduler, worker, triggerer, and initialization.
+
+
+# COMMON VARS
 x-airflow-common: &airflow-common
-  # Specify the Airflow Docker image to use, allowing an override with the AIRFLOW_IMAGE_NAME environment variable.
+
+  # Airflow image to use, AIRFLOW_IMAGE_NAME is set in the .env file.
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
+
+
   # Environment variables shared by all Airflow components.
   environment:
     &airflow-common-env
 
+
     ### DEFAULT AIRFLOW ENVIRONMENT VARIABLES ###
+
     # Use CeleryExecutor for distributed task execution.
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     # Connection string for Airflow's Postgres metadata database.
@@ -17,8 +26,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     # Encryption key for sensitive data.
     AIRFLOW__CORE__FERNET_KEY: ''
-    # Do not pause DAGs at creation by default.
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    # Pause DAGs at creation.
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     # Disable loading of example DAGs.
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     # Authentication backends for the Airflow API.
@@ -30,22 +39,11 @@ x-airflow-common: &airflow-common
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
 
 
-
-    # Alert on task failure parameters
-    ALERT_ON_FAILURE: 'False' #<----- True if you want to receive an email when a DAG fails
-    ALERT_EMAIL_SEND: '' #<----- Email to send the alert
-    ALERT_EMAIL_RECEIVE: '' #<----- Email to receive the alert
-    MAIL_SERVER: 'smtp-mail.outlook.com' #<--- Mail server
-    MAIL_SERVER_PORT: '587' #<--- Mail server port
-    MAIL_LOGIN: '' #<--- Mail login
-    MAIL_PASSWORD: '' # Placeholder for mail password, to be securely managed.
-
-
     # Scraping parameters
     # Path to the Selenium WebDriver, for use in web scraping DAGs.
     # /!\ CRITICAL VAR - Do not change unless you know what you are doing.
     # Change the path to the driver if needed. Scraping functions use firefox driver
-    DRIVER_PATH: /opt/airflow/dags/geckodriver # <---- Path to the geckodriver
+    #DRIVER_PATH: /opt/airflow/dags/geckodriver # <---- Path to the geckodriver
 
 
     # Dags schedulers parameters
@@ -60,10 +58,7 @@ x-airflow-common: &airflow-common
     DATA_PG_DB: train_delay_db
 
 
-
-
-
-  # Volume mappings for Airflow configurations, logs, DAGs, data storage, models, and MLflow tracking.  
+  # Volume mappings for Airflow configurations
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -77,7 +72,7 @@ x-airflow-common: &airflow-common
 
   # Run Airflow with a specified user ID, defaulting to 50000.  
   user: "${AIRFLOW_UID:-50000}:0"
-  # Ensure Airflow starts after Redis and Postgres are healthy.
+  # Airflow dependencies, ensuring that Postgres and Redis are healthy before starting.
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -85,9 +80,14 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
 
-# Service definitions for Postgres and Redis, used by Airflow for metadata database and message broker, respectively.
+
+
+
+### SERVICES
+
 services:
-  # Postgres service configuration, including health check and restart policies.
+
+  # Postgres
   postgres:
     image: postgres:13
     environment:
@@ -103,7 +103,7 @@ services:
       start_period: 5s
     restart: always
 
-  # Redis service configuration, including health check and restart policies.
+  # Redis
   redis:
     image: redis:latest
     expose:
@@ -116,25 +116,25 @@ services:
       start_period: 30s
     restart: always
 
-  # Defines the Airflow webserver service, inheriting common settings.
+  # Webserver
   airflow-webserver:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080" # Maps port 8080 of the container to port 8080 on the host, for web UI access.
+      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always # Restart policy to ensure the webserver is always running.
+    restart: always 
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
-        condition: service_completed_successfully # Depends on the successful initialization of Airflow.
+        condition: service_completed_successfully
   
-  # Defines the Airflow scheduler service, responsible for scheduling workflows.
+  # Scheduler
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
@@ -150,7 +150,7 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  # Defines the Airflow worker service, used for executing tasks in parallel.
+  # Worker
   airflow-worker:
     <<: *airflow-common
     command: celery worker
@@ -166,14 +166,14 @@ services:
       start_period: 30s
     environment:
       <<: *airflow-common-env
-      DUMB_INIT_SETSID: "0" # Ensures proper signal handling and shutdown of workers.
+      DUMB_INIT_SETSID: "0"
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
 
-  # Defines the Airflow triggerer service, used for triggering tasks and workflows.
+  # Triggerer
   airflow-triggerer:
     <<: *airflow-common
     command: triggerer
@@ -190,7 +190,7 @@ services:
         condition: service_completed_successfully
 
 
-  # Initialization service for Airflow, setting up the database and creating the initial user.
+  # INIT
   airflow-init:
     <<: *airflow-common
     entrypoint: /bin/bash
@@ -261,18 +261,19 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources # Mounts the project directory for access by the init service.
 
-  # Airflow CLI service, primarily for debugging and manual intervention.
+  # Airflow CLI service
   airflow-cli:
     <<: *airflow-common
     profiles:
-      - debug # This service is included under a 'debug' profile, indicating it's optional.
+      - debug
     environment:
       <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
     command:
       - bash
       - -c
-      - airflow # Allows direct execution of Airflow CLI commands.
+      - airflow
+
 
 # Defines a volume for Postgres data persistence, ensuring data is not lost between container restarts.
 volumes:

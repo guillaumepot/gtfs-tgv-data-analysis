@@ -6,3 +6,9 @@ venv/
 # ignore dev volumes
 pgadmin_data/
 postgres_data/
+
+# ignore airflow log files
+modules/airflow/logs/
+modules/airflow/dags/__pycache__/
+modules/airflow/dags/.ipynb_checkpoints/
+modules/airflow/dags/.DS_Store

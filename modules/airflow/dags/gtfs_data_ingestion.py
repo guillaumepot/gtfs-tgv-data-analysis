@@ -15,7 +15,7 @@ import datetime
 import os
 
 # task functions
-from task_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
+from gtfs_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
 
 
 
@@ -61,7 +61,7 @@ transform_feed_gtfs_rt = PythonOperator(
     task_id = 'transform_feed_gtfs_rt',
     dag = gtfs_ingestion_dag,
     python_callable = transform_feed,
-    op_kwargs = {'feed_dict': "{{ task_instance.xcom_pull(task_ids='get_feed_gtfs_rt') }}"},
+    op_kwargs = {'feed_json': "{{ task_instance.xcom_pull(task_ids='get_feed_gtfs_rt') }}"},
     #retries = 0,
     #retry_delay = datetime.timedelta(seconds=30),
     on_failure_callback=None,
@@ -76,7 +76,7 @@ push_trip_data_to_db = PythonOperator(
     task_id = 'push_trip_data_to_db',
     dag = gtfs_ingestion_dag,
     python_callable = push_feed_data_to_db,
-    op_kwargs = {'feed_dict': "{{ task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt') }}",
+    op_kwargs = {'feed_data': "{{ task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[0] }}",
                  'table': 'trips_gtfs_rt'},
     retries = 3,
     retry_delay = datetime.timedelta(seconds=20),
@@ -92,7 +92,7 @@ push_stop_times_data_to_db = PythonOperator(
     task_id = 'push_stop_times_data_to_db',
     dag = gtfs_ingestion_dag,
     python_callable = push_feed_data_to_db,
-    op_kwargs = {'feed_dict': "{{ task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt') }}",
+    op_kwargs = {'feed_data': "{{ task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[1] }}",
                  'table': 'stop_time_update_gtfs_rt'},
     retries = 3,
     retry_delay = datetime.timedelta(seconds=20),
