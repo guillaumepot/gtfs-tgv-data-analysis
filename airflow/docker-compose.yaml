@@ -48,6 +48,21 @@ x-airflow-common: &airflow-common
     DRIVER_PATH: /opt/airflow/dags/geckodriver # <---- Path to the geckodriver
 
 
+    # Dags schedulers parameters
+    GTFS_INGESTION_SCHEDULER: '*/5 * * * *' #<--- Every 5 minutes
+
+
+    # Database parameters
+    DATA_PG_HOST: train_delay_postgres
+    DATA_PG_PORT: 5432
+    DATA_PG_USER: root
+    DATA_PG_PASSWORD: root
+    DATA_PG_DB: train_delay_db
+
+
+
+
+
   # Volume mappings for Airflow configurations, logs, DAGs, data storage, models, and MLflow tracking.  
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
@@ -58,8 +73,6 @@ x-airflow-common: &airflow-common
     - ${STORAGE_DIR}/raw:/opt/airflow/data/raw
     - ${STORAGE_DIR}/cleaned:/opt/airflow/data/cleaned
     - ${STORAGE_DIR}/gtfs:/opt/airflow/data/gtfs
-
-
 
 
   # Run Airflow with a specified user ID, defaulting to 50000.  

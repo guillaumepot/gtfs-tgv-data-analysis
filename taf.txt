@@ -1,3 +1,10 @@
+DAG GTFS DATA INGESTIOn
+ -> function async push_feed_data_to_db(feed_data:list)
+
+
+
+
+
 # Diagram db
 // Use DBML to define your database structure
 // Docs: https://dbml.dbdiagram.io/docs

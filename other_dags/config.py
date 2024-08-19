@@ -1,6 +1,5 @@
 import os
 
-
 """
 These vars act as schedulers
 """
