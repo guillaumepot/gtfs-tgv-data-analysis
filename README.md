@@ -33,10 +33,7 @@ IMG TO ADD
 
 ## Introduction
 
-I've a story to tell you.
-During my profesional carreer, I worked as resource manager in the national French railway company: SNCF. My role was to [..]
-
-
+[WIP]
 
 ---
 
@@ -60,11 +57,12 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 ## Repo Architecture [WIP]
 
 ```
-
+|
+├── airflow <- Contains all airflow files to orchestrate pipelines
 |
 ├── notebooks <- Draft code to explore data files
 |
-└── postgres <- Postgres database to store GTFS RT datas
+└── postgres <- Postgres database to store GTFS & GTFS RT datas
 
 ```
 
@@ -91,7 +89,8 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 
 
 ## Installation [WIP]
-- 
+- Update postgres/docker compose & set postgres credentials
+- Update airflow/.env file with postgres infos & credentials
 
 
 

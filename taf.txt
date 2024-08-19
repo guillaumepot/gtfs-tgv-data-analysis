@@ -1,28 +1,18 @@
-- Pipeline update GTFS
-- Pipeline update datasets
-- Start postgres & pgadmin container
-- Create script to make db tables (gtfs datas)
-- Pipeline create/update GTFS RT datas (first create, then update if created env var exists ?)
-
-
-
-
 # Diagram db
-
-
 // Use DBML to define your database structure
 // Docs: https://dbml.dbdiagram.io/docs
 
 Table trips_gtfs_rt {
   trip_id varchar pk
+  trip_headline int [ref: - trips_gtfs.trip_headline]
   departure_date date
   departure_time time
 }
 
 
 Table stop_time_update_gtfs_rt {
-  trip_id varchar pk
-  stop_id VARCHAR
+  trip_id varchar pk [ref: > trips_gtfs_rt.trip_id]
+  stop_id VARCHAR [ref: - stops_gtfs.stop_id]
   arrival_time TIMESTAMP
   departure_time TIMESTAMP
   delay_arrival INT
@@ -32,8 +22,8 @@ Table stop_time_update_gtfs_rt {
 
 Table trips_gtfs {
   trip_headline int pk
-  route_id varchar
-  trip_id varchar
+  route_id varchar [ref: - routes_gtfs.route_id]
+  trip_id varchar [ref: < stop_times_gtfs.trip_id]
   direction_id int
 }
 
@@ -47,11 +37,11 @@ Table routes_gtfs {
 }
 
 
-Table stops_times_gtfs {
+Table stop_times_gtfs {
   trip_id varchar pk
   arrival_time time
   departure_time time
-  stop_id varchar
+  stop_id varchar [ref: > stops_gtfs.stop_id]
   stop_sequence int
   pickup_type int
   drop_off_type int
