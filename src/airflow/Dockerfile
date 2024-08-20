@@ -4,7 +4,7 @@ FROM apache/airflow:latest-python3.10
 USER root
 
 # Install firefox
-RUN apt-get update && apt-get install -y firefox-esr
+RUN apt-get update && apt-get install -y firefox-esr libpq-dev
 
 
 # Get Geckodriver

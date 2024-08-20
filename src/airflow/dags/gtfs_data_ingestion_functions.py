@@ -4,11 +4,11 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
-import asyncpg
 from google.transit import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToDict
 import json
 import os
+import psycopg2
 import requests
 
 
@@ -22,7 +22,7 @@ postgres_db = os.getenv('DATA_PG_DB', 'train_delay_db')
 
 
 # COMMON FUNCTIONS
-def connect_to_postgres() -> asyncpg.connection:
+def connect_to_postgres() -> psycopg2.connection:
     """
     Connects to the database using the provided credentials.
 
@@ -30,7 +30,7 @@ def connect_to_postgres() -> asyncpg.connection:
         asyncpg.connection: The connection object representing the connection to the database.
     """
 
-    return asyncpg.connect(user=postgres_user,
+    return psycopg2.connect(user=postgres_user,
                                    password=postgres_password,
                                    database=postgres_db,
                                    host=postgres_host,

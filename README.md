@@ -1,78 +1,136 @@
-# HighSpeed Train delay prediction (France | TGV)
-
-Can We predict delay for TGV trains in France ?
+# HighSpeed Train data analysis & predictions (France | TGV)
 
 
-<!-- 
-IMG TO ADD 
-<img src="./media/img.jpeg" width="350" height="350">
--->
+This project covers Data engineering, Datascience & Mlops.
+
+- Get the datas form GTFS & GTFS RT sources and store them in a Database
+- use ETL pipelines to serve different purposes
+- Analyse datas with a dashboard
+- Train a ML model to predict delays & delay time.
 
 
----
+
+<img src="./media/project_img.jpeg" width="350" height="350">
+
+
+
+## Current Features
+
+
+- Currently does nothing
+
+
 
 
 ## Project Information
 
-- **Version**: 0.0.1dev
+- **Version**: 0.0.1
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
-- **Contact Information**: guillaumepot.pro@outlook.com
+
+[![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/062guillaumepot/)
 
 
----
 
 
-## Table of Contents [WIP]
+## Table of Contents
 - [Introduction](#introduction)
 - [What is GTFS](#what-is-gtfs)
--
+- [Installation](#installation)
+    - [Requirements](#requirements)
+- [Repository](#repository)
+    - [Architecture](#architecture)
+    - [Branch Policy](#branch-policy)
+    - [Changelogs](#changelogs)
+    - [Roadmap](#roadmap)
+    - [Contributions](#contirbutions)
+- [Modules](#modules)
+    - [Airflow](#airflow)
+    - [Postgres](#postgres)
+- [Miscellaneous](#miscellaneous)
+    - [Data Sources](#data-sources)
 
----
+
 
 
 ## Introduction
 
 [WIP]
 
----
 
 
-## What is GTFS [WIP]
+## What is GTFS
 
+``` text
+The General Transit Feed Specification (GTFS) is an Open Standard used to distribute relevant information about transit systems to riders. It allows public transit agencies to publish their transit data in a format that can be consumed by a wide variety of software applications. Today, the GTFS data format is used by thousands of public transport providers.
 
-SNCF GTFS TR is updated every 2mins, display from now to now+60mins
--> Update datas with gtfr_rf_updater every 6hours ? 
+GTFS consists of two main parts: GTFS Schedule and GTFS Realtime. GTFS Schedule contains information about routes, schedules, fares, and geographic transit details, and it is presented in simple text files. This straightforward format allows for easy creation and maintenance without relying on complex or proprietary software.
 
----
+GTFS Realtime contains trip updates, vehicle positions, and service alerts. It is based on Protocol Buffers, which are a language (and platform) neutral mechanism for serializing structured data.
 
-
-## Current Features [WIP]
-
-- 
-
----
-
-
-## Repo Architecture [WIP]
+GTFS is supported around the world and its use, importance, and scope has been increasing. It’s likely that an agency you know already uses GTFS to represent routes, schedule, stop locations, and other information, and that riders are already consuming it via various applications.
 
 ```
+<b>Source: https://gtfs.org/</b>
+
+
+
+## Installation
+
+-
+-
+
+
+
+
+### Requirements
+
+- Docker
+-
+
+
+
+
+## Repository
+### Architecture
+
+
+``` yaml
 |
-├── airflow <- Contains all airflow files to orchestrate pipelines
+├── changelogs         # Changelogs files which contains changes for each new version 
 |
-├── notebooks <- Draft code to explore data files
+├── media              # General directory, contains images & schemas for the repository
 |
-└── postgres <- Postgres database to store GTFS & GTFS RT datas
+├── notebooks          # Notebooks used to test functions, data exploration. Draft code only.
+|
+├── src                # Contains 'modules' used to run the app
+|    |
+|    ├── airflow       # Airflow files
+|    |
+|    ├── postgres      # Postgres db files
+|    |
+|    └── unit_tests    # Unit tests files
+|
+├── storage
+|      |
+|      ├── cleaned    # Cleaned data
+|      |
+|      ├── gtfs       # GTFS data
+|      |
+|      └── raw        # Raw data 
+|
+├── .gitignore
+|
+├── LICENSE
+|
+└── README.md
 
 ```
 
 
----
+### Branch Policy
 
-
-## Branch logic [WIP]
-
-```
+``` yaml
 
 ├── main    # Main branch, contains releases
 |   
@@ -85,28 +143,14 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 ```
 
 
----
 
+### Changelogs
 
-## Installation [WIP]
-- Update postgres/docker compose & set postgres credentials
-- Update airflow/.env file with postgres infos & credentials
-
-
-
----
-
-
-## Changelogs [WIP]
-
--
+[v0.0.1](./changelogs/0.0.1.md)
 
 
 
----
-
-
-## Roadmap [WIP]
+### Roadmap
 
 ```
 
@@ -115,11 +159,30 @@ SNCF GTFS TR is updated every 2mins, display from now to now+60mins
 ```
 
 
+### Contributions
 
----
+```
+
+-
+
+```
 
 
-## Data sources
+## Modules
+
+### Airflow
+
+### PostGres
+
+
+
+
+
+
+
+## Miscellaneous
+
+### Data sources
 
 Train stations:
 https://ressources.data.sncf.com/explore/dataset/gares-de-voyageurs/information/?disjunctive.segment_drg

@@ -1,5 +1,34 @@
-DAG GTFS DATA INGESTIOn
- -> function async push_feed_data_to_db(feed_data:list)
+Airflow - Dag 1
+
+
+
+
+
+docker scout:
+- airflow img
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
