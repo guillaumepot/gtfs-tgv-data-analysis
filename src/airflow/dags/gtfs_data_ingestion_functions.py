@@ -164,10 +164,11 @@ def push_feed_data_to_db(feed_data:list, table:str) -> None:
     Raises:
     ValueError: If there is an error while connecting to the database.
     """
+    conn=None
     try:
         conn = connect_to_postgres()
-    except:
-        raise ValueError("Error while connecting to the database")
+    except Exception as e:
+        print(f"Failed to connect to PostgreSQL: {e}")
     else:
         # trip table update
         if table == 'trips_gtfs_rt':
@@ -199,4 +200,5 @@ def push_feed_data_to_db(feed_data:list, table:str) -> None:
                 """, stop_time['trip_id'], stop_time['stop_id'], stop_time['arrival_time'], stop_time['departure_time'], stop_time['delay_arrival'], stop_time['delay_departure'], stop_time['update_time'])
 
     finally:
-        conn.close()
+        if conn:
+            conn.close()

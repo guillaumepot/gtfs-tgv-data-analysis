@@ -102,6 +102,8 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+    networks:
+      - airflow_default
 
   # Redis
   redis:
@@ -115,6 +117,8 @@ services:
       retries: 50
       start_period: 30s
     restart: always
+    networks:
+      - airflow_default
 
   # Webserver
   airflow-webserver:
@@ -133,6 +137,9 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - airflow_default
+      - train_app_network
   
   # Scheduler
   airflow-scheduler:
@@ -149,6 +156,9 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - airflow_default
+      - train_app_network
 
   # Worker
   airflow-worker:
@@ -172,6 +182,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - airflow_default
 
   # Triggerer
   airflow-triggerer:
@@ -188,7 +200,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
+    networks:
+      - airflow_default
 
   # INIT
   airflow-init:
@@ -260,6 +273,9 @@ services:
     user: "0:0" # Runs as root to perform initial setup tasks.
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources # Mounts the project directory for access by the init service.
+    networks:
+      - airflow_default
+
 
   # Airflow CLI service
   airflow-cli:
@@ -273,8 +289,15 @@ services:
       - bash
       - -c
       - airflow
-
+    networks:
+      - airflow_default
 
 # Defines a volume for Postgres data persistence, ensuring data is not lost between container restarts.
 volumes:
   postgres-db-volume:
+
+networks:
+  airflow_default:
+    driver: bridge
+  train_app_network:
+    external: true
