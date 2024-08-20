@@ -49,4 +49,4 @@ jobs:
         subject: '[Train repo] - Unit Test Failure Notification'
         body: The unit tests have failed. Please check the workflow logs for details.
         to: ${{ secrets.WORKFLOW_EMAIL_DESTINATION }}
-        from: ${{ secrets.EMAIL_USERNAME }}
+        from: ${{ secrets.WORKFLOW_EMAIL_PASSWORD }}
