@@ -22,7 +22,7 @@ postgres_db = os.getenv('DATA_PG_DB', 'train_delay_db')
 
 
 # COMMON FUNCTIONS
-def connect_to_postgres() -> psycopg2.connection:
+def connect_to_postgres() -> psycopg2.connect:
     """
     Connects to the database using the provided credentials.
 
@@ -106,8 +106,6 @@ def transform_feed(feed_json:str) -> list:
     feed_dict = json.loads(feed_json)
 
 
-    # Remove Header key
-    del feed_dict['header']
     # Remove entity key and keep the list value as dictionary
     feed_dict = feed_dict['entity']
 
@@ -192,7 +190,7 @@ def push_feed_data_to_db(feed_data:list, table:str) -> None:
                     DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
                                   departure_time = EXCLUDED.departure_time,
                                   delay_arrival = EXCLUDED.delay_arrival,
-                                  delay_departure = EXCLUDED.delay_departure
+                                  delay_departure = EXCLUDED.delay_departure,
                                   update_time = EXCLUDED.update_time
                     WHERE {table}.arrival_time <> EXCLUDED.arrival_time
                     OR {table}.departure_time <> EXCLUDED.departure_time
