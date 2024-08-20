@@ -1,3 +1,4 @@
 gtfs-realtime-bindings
 pytest
 psycopg2-binary
+requests
