@@ -1,0 +1,15 @@
+# ignore python cache files
+__pycache__/
+.pytest_cache/
+# ignore virtualenv
+venv/
+
+# ignore dev volumes
+pgadmin_data/
+postgres_data/
+
+# ignore airflow log files
+src/airflow/logs/
+src/airflow/dags/__pycache__/
+src/airflow/dags/.ipynb_checkpoints/
+src/airflow/dags/.DS_Store
