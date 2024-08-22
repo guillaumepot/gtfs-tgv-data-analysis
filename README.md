@@ -17,7 +17,7 @@ This project covers Data engineering, Datascience & Mlops.
 ## Current Features
 
 
-- Currently does nothing
+- Get & update (every 5 mins) GTFS Real Time datas, add these datas to a postgres Database.
 
 
 
@@ -154,7 +154,11 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ```
 
--
+- Dag to ingest GTFS (not RT) datas in the PG database
+- ETL pipeline to upgrade GTFS data structure
+- BI board for data analysis
+- Train delay prediction (classification)
+- Train time delay prediction (regression)
 
 ```
 

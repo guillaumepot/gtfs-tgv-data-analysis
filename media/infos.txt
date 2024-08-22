@@ -1,9 +1,4 @@
-Airflow - Dag 1
-
-
-
-
-
+$
 docker scout:
 - airflow img
 
