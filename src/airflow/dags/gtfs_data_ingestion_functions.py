@@ -12,14 +12,6 @@ import psycopg2
 import requests
 
 
-# VARS
-postgres_host = os.getenv('DATA_PG_HOST', 'localhost')
-postgres_port = os.getenv('DATA_PG_PORT', 5432)
-postgres_user = os.getenv('DATA_PG_USER', 'root')
-postgres_password = os.getenv('DATA_PG_PASSWORD', 'root')
-postgres_db = os.getenv('DATA_PG_DB', 'train_delay_db')
-
-
 
 # COMMON FUNCTIONS
 def connect_to_postgres() -> psycopg2.connect:
@@ -30,11 +22,11 @@ def connect_to_postgres() -> psycopg2.connect:
         asyncpg.connection: The connection object representing the connection to the database.
     """
 
-    return psycopg2.connect(user=postgres_user,
-                                   password=postgres_password,
-                                   database=postgres_db,
-                                   host=postgres_host,
-                                   port=postgres_port)
+    return psycopg2.connect(user=os.getenv('DATA_PG_USER'),
+                            password=os.getenv('DATA_PG_PASSWORD'),
+                            dbname=os.getenv('DATA_PG_DB'),
+                            host=os.getenv('DATA_PG_HOST'),
+                            port=os.getenv('DATA_PG_PORT'))
             
 
 
@@ -164,16 +156,19 @@ def push_feed_data_to_db(feed_data:list, table:str) -> None:
     Raises:
     ValueError: If there is an error while connecting to the database.
     """
-    conn=None
+    conn = None
+    cursor = None
+
     try:
         conn = connect_to_postgres()
+        cursor = conn.cursor()
     except Exception as e:
-        print(f"Failed to connect to PostgreSQL: {e}")
+        raise ValueError(f"Failed to connect to PostgreSQL: {e}")
     else:
         # trip table update
         if table == 'trips_gtfs_rt':
             for trip in feed_data:
-                conn.execute(f"""
+                cursor.execute(f"""
                     INSERT INTO {table} (trip_id, departure_date, departure_time)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (trip_id, departure_date)
@@ -184,7 +179,7 @@ def push_feed_data_to_db(feed_data:list, table:str) -> None:
         # stop_time_update table update
         if table == 'stop_time_update_gtfs_rt':
             for stop_time in feed_data:
-                conn.execute(f"""
+                cursor.execute(f"""
                     INSERT INTO {table} (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
                     VALUES ($1, $2, $3, $4, $5, $6, $7)
                     ON CONFLICT (trip_id, stop_id)

@@ -184,6 +184,7 @@ services:
         condition: service_completed_successfully
     networks:
       - airflow_default
+      - train_app_network
 
   # Triggerer
   airflow-triggerer:
