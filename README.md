@@ -177,6 +177,13 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Airflow
 
+The schemas below display dags Airflow executes to fetch datas.
+
+
+<b> GTFS RT Ingestion Dag </b>
+- Schedule: Every 5 minutes 24/7
+<img src="./media/GTFS _RT_ingestion_dag.png">
+
 
 ### PostGres
 
@@ -186,8 +193,9 @@ Ingested datas are GTFS & GFTS RT.
 GTFS RT datas are updated every 5 minutes.
 GTFS datas are updated once a day.
 
-
 <img src="./media/PostgresDiagram.png">
+
+
 
 
 
