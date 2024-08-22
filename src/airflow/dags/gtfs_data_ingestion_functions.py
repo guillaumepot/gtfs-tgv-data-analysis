@@ -178,44 +178,14 @@ def push_feed_data_to_db(**kwargs) -> None:
 
     logging.info(f'feed_data first trips: {feed_data[:3]}')
 
+
+    conn = None
+    cursor = None
     try:
-        with connect_to_postgres() as conn:
-            with conn.cursor() as cursor:
-                # trip table update
-                if kwargs['table']  == "trips_gtfs_rt":
-                    for trip in feed_data:
-                        cursor.execute(f"""
-                            INSERT INTO {kwargs['table'] } (trip_id, departure_date, departure_time)
-                            VALUES (%s, %s, %s)
-                            ON CONFLICT (trip_id, departure_date)
-                            DO UPDATE SET departure_time = EXCLUDED.departure_time
-                            WHERE {kwargs['table'] }.departure_time <> EXCLUDED.departure_time;
-                        """, (trip["trip_id"], trip["departure_date"], trip["departure_time"]))
+        conn = connect_to_postgres()
+        cursor = conn.cursor()
 
-                # stop_time_update table update
-                elif kwargs['table']  == "stop_time_update_gtfs_rt":
-                    for stop_time in feed_data:
-                        cursor.execute(f"""
-                            INSERT INTO {kwargs['table'] } (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (trip_id, stop_id)
-                            DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
-                                          departure_time = EXCLUDED.departure_time,
-                                          delay_arrival = EXCLUDED.delay_arrival,
-                                          delay_departure = EXCLUDED.delay_departure,
-                                          update_time = EXCLUDED.update_time
-                            WHERE {kwargs['table'] }.arrival_time <> EXCLUDED.arrival_time
-                            OR {kwargs['table'] }.departure_time <> EXCLUDED.departure_time
-                            OR {kwargs['table'] }.delay_arrival <> EXCLUDED.delay_arrival
-                            OR {kwargs['table'] }.delay_departure <> EXCLUDED.delay_departure;
-                        """, (
-                            stop_time["trip_id"], stop_time["stop_id"], stop_time["arrival_time"], 
-                            stop_time["departure_time"], stop_time["delay_arrival"], 
-                            stop_time["delay_departure"], stop_time["update_time"]
-                        ))
 
-            conn.commit()
-    
     except psycopg2.DatabaseError as e:
         logging.error(f"Database error: {e}")
         raise ValueError(f"Failed to push data to PostgreSQL: {e}")
@@ -223,3 +193,48 @@ def push_feed_data_to_db(**kwargs) -> None:
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         raise ValueError(f"An unexpected error occurred: {e}")
+
+
+    else:
+
+        # trip table update
+        if kwargs['table']  == "trips_gtfs_rt":
+            for trip in feed_data:
+                cursor.execute(f"""
+                    INSERT INTO {kwargs['table'] } (trip_id, departure_date, departure_time)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (trip_id, departure_date)
+                    DO UPDATE SET departure_time = EXCLUDED.departure_time
+                    WHERE {kwargs['table'] }.departure_time <> EXCLUDED.departure_time;
+                """, (trip["trip_id"], trip["departure_date"], trip["departure_time"]))
+
+        # stop_time_update table update
+        elif kwargs['table']  == "stop_time_update_gtfs_rt":
+            for stop_time in feed_data:
+                cursor.execute(f"""
+                    INSERT INTO {kwargs['table'] } (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (trip_id, stop_id)
+                    DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
+                                    departure_time = EXCLUDED.departure_time,
+                                    delay_arrival = EXCLUDED.delay_arrival,
+                                    delay_departure = EXCLUDED.delay_departure,
+                                    update_time = EXCLUDED.update_time
+                    WHERE {kwargs['table'] }.arrival_time <> EXCLUDED.arrival_time
+                    OR {kwargs['table'] }.departure_time <> EXCLUDED.departure_time
+                    OR {kwargs['table'] }.delay_arrival <> EXCLUDED.delay_arrival
+                    OR {kwargs['table'] }.delay_departure <> EXCLUDED.delay_departure;
+                """, (
+                    stop_time["trip_id"], stop_time["stop_id"], stop_time["arrival_time"], 
+                    stop_time["departure_time"], stop_time["delay_arrival"], 
+                    stop_time["delay_departure"], stop_time["update_time"]
+                ))
+
+        conn.commit()
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
