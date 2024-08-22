@@ -22,7 +22,7 @@ def connect_to_postgres() -> psycopg2.connect:
     Connects to the database using the provided credentials.
 
     Returns:
-        asyncpg.connection: The connection object representing the connection to the database.
+        psycopg2.connect: The connection object representing the connection to the database.
     """
 
     return psycopg2.connect(user=os.getenv("DATA_PG_USER"),
@@ -49,6 +49,7 @@ def get_gtfs_rt_data(gtfs_rt_url: str) -> str:
     """
 
 
+    # Function to fetch data
     def fetch_data(url: str) -> requests.Response:
         """
         Fetches GTFS-RT data from the given URL.
@@ -62,39 +63,36 @@ def get_gtfs_rt_data(gtfs_rt_url: str) -> str:
         try:
             response = requests.get(url)
             response.raise_for_status()
-            return response
         
         except requests.exceptions.RequestException as e:
-            return None
-
+            logging.error(f"An error occurred while fetching the data: {e}")
+            raise ValueError(f"Failed to fetch data: {e}")
+        
+        else:
+            return response
 
     # Get response
     response = fetch_data(gtfs_rt_url)
-
     # Parse GTFS RT Datas
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(response.content)
-    
     # Convert FeedMessage to dictionary
     feed_dict = MessageToDict(feed)
-    
     # Serialize dictionary to JSON string
     feed_json = json.dumps(feed_dict)
     
     return feed_json
 
 
+
 def transform_feed(**kwargs) -> list:
     """
-    Transform the feed dictionary into a list of trip data and stop times data.
-    
+    Transform the GTFS Real-Time feed data into a list of trip data and stop times data.
     Parameters:
-    - feed_dict (dict): The dictionary containing the feed data.
-    
+    - kwargs: A dictionary of keyword arguments.
     Returns:
-    - tuple: A tuple containing two lists:
-        - all_trip_data (list): A list of dictionaries containing trip data.
-        - all_stop_times_data (list): A list of dictionaries containing stop times data.
+    - all_trip_data: A list of dictionaries containing trip data.
+    - all_stop_times_data: A list of dictionaries containing stop times data.
     """
 
     # Retrieve the XCom value
@@ -104,10 +102,8 @@ def transform_feed(**kwargs) -> list:
     # Convert string to dictionary (from Xcom, the feed_dict is a string)
     feed_dict = json.loads(feed_json)
 
-
     # Remove entity key and keep the list value as dictionary
     feed_dict = feed_dict["entity"]
-
 
     # Generate empty lists
     all_trip_data = []
@@ -123,7 +119,6 @@ def transform_feed(**kwargs) -> list:
         # Convert Unix timestamp to datetime string to inject into the PG database
         updated_at = int(updated_at)
         updated_at = datetime.utcfromtimestamp(updated_at).strftime('%Y-%m-%d %H:%M:%S')
-
 
         # Trip Data
         trip_data = {
@@ -148,8 +143,6 @@ def transform_feed(**kwargs) -> list:
             if departure_time:
                 departure_time = datetime.utcfromtimestamp(int(departure_time)).strftime('%Y-%m-%d %H:%M:%S')
 
-
-
             stop_times_data = {
                 "trip_id": trip_id,
                 "stop_id": stop_id,
@@ -170,35 +163,44 @@ def transform_feed(**kwargs) -> list:
 
 def push_feed_data_to_db(**kwargs) -> None:
     """
-
+    Pushes feed data to the database.
+    Args:
+        **kwargs: Arbitrary keyword arguments.
+    Returns:
+        None
+    Raises:
+        ValueError: If failed to push data to PostgreSQL or an unexpected error occurs.
+        psycopg2.DatabaseError: If there is a database error.    
     """
     # Retrieve the XCom value
     task_instance = kwargs['task_instance']
     feed_data = task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[0] if kwargs['table'] == 'trips_gtfs_rt' else task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[1]
 
-    logging.info(f'feed_data first trips: {feed_data[:3]}')
-
-
+    # Initialize the connection and cursor
     conn = None
     cursor = None
+
+    # Push data to the database
     try:
+        # Connect to the database
         conn = connect_to_postgres()
         cursor = conn.cursor()
 
-
+    # Raise an error if the connection fails
     except psycopg2.DatabaseError as e:
         logging.error(f"Database error: {e}")
         raise ValueError(f"Failed to push data to PostgreSQL: {e}")
 
+    # Raise an error if an unexpected error occurs
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         raise ValueError(f"An unexpected error occurred: {e}")
 
 
     else:
-
         # trip table update
         if kwargs['table']  == "trips_gtfs_rt":
+            # Loop through the feed data and insert or update the data in the database
             for trip in feed_data:
                 cursor.execute(f"""
                     INSERT INTO {kwargs['table'] } (trip_id, departure_date, departure_time)
@@ -210,6 +212,7 @@ def push_feed_data_to_db(**kwargs) -> None:
 
         # stop_time_update table update
         elif kwargs['table']  == "stop_time_update_gtfs_rt":
+            # Loop through the feed data and insert or update the data in the database
             for stop_time in feed_data:
                 cursor.execute(f"""
                     INSERT INTO {kwargs['table'] } (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
@@ -230,11 +233,12 @@ def push_feed_data_to_db(**kwargs) -> None:
                     stop_time["delay_departure"], stop_time["update_time"]
                 ))
 
+        # Commit the transaction
         conn.commit()
     
+    # Close the cursor and connection
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-
