@@ -1,3 +1,0 @@
-On new version:
-
-- Change version in .github/workflows/.env

@@ -146,6 +146,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Changelogs
 
+[v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
 
 
@@ -176,10 +177,17 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Airflow
 
+
 ### PostGres
 
+The schema below shows tables and relations for the database.
+Ingested datas are GTFS & GFTS RT.
+
+GTFS RT datas are updated every 5 minutes.
+GTFS datas are updated once a day.
 
 
+<img src="./media/PostgresDiagram.png">
 
 
 
