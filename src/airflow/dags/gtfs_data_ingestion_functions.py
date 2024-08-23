@@ -145,6 +145,7 @@ def transform_feed(**kwargs) -> list:
 
             stop_times_data = {
                 "trip_id": trip_id,
+                "departure_date": departure_date,
                 "stop_id": stop_id,
                 "arrival_time": arrival_time,
                 "departure_time": departure_time,
@@ -156,7 +157,6 @@ def transform_feed(**kwargs) -> list:
             all_stop_times_data.append(stop_times_data)
 
     return all_trip_data, all_stop_times_data
-
 
 
 
@@ -196,41 +196,41 @@ def push_feed_data_to_db(**kwargs) -> None:
         logging.error(f"Unexpected error: {e}")
         raise ValueError(f"An unexpected error occurred: {e}")
 
-
     else:
         # trip table update
-        if kwargs['table']  == "trips_gtfs_rt":
+        if kwargs['table'] == "trips_gtfs_rt":
             # Loop through the feed data and insert or update the data in the database
             for trip in feed_data:
                 cursor.execute(f"""
-                    INSERT INTO {kwargs['table'] } (trip_id, departure_date, departure_time)
+                    INSERT INTO {kwargs['table']} (trip_id, departure_date, departure_time)
                     VALUES (%s, %s, %s)
                     ON CONFLICT (trip_id, departure_date)
                     DO UPDATE SET departure_time = EXCLUDED.departure_time
-                    WHERE {kwargs['table'] }.departure_time <> EXCLUDED.departure_time;
+                    WHERE {kwargs['table']}.departure_time <> EXCLUDED.departure_time;
                 """, (trip["trip_id"], trip["departure_date"], trip["departure_time"]))
 
         # stop_time_update table update
-        elif kwargs['table']  == "stop_time_update_gtfs_rt":
+        elif kwargs['table'] == "stop_time_update_gtfs_rt":
             # Loop through the feed data and insert or update the data in the database
             for stop_time in feed_data:
                 cursor.execute(f"""
-                    INSERT INTO {kwargs['table'] } (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (trip_id, stop_id)
+                    INSERT INTO {kwargs['table']} (trip_id, departure_date, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (trip_id, departure_date, stop_id)
                     DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
-                                    departure_time = EXCLUDED.departure_time,
-                                    delay_arrival = EXCLUDED.delay_arrival,
-                                    delay_departure = EXCLUDED.delay_departure,
-                                    update_time = EXCLUDED.update_time
-                    WHERE {kwargs['table'] }.arrival_time <> EXCLUDED.arrival_time
-                    OR {kwargs['table'] }.departure_time <> EXCLUDED.departure_time
-                    OR {kwargs['table'] }.delay_arrival <> EXCLUDED.delay_arrival
-                    OR {kwargs['table'] }.delay_departure <> EXCLUDED.delay_departure;
+                                  departure_time = EXCLUDED.departure_time,
+                                  delay_arrival = EXCLUDED.delay_arrival,
+                                  delay_departure = EXCLUDED.delay_departure,
+                                  update_time = EXCLUDED.update_time
+                    WHERE {kwargs['table']}.arrival_time <> EXCLUDED.arrival_time
+                    OR {kwargs['table']}.departure_time <> EXCLUDED.departure_time
+                    OR {kwargs['table']}.delay_arrival <> EXCLUDED.delay_arrival
+                    OR {kwargs['table']}.delay_departure <> EXCLUDED.delay_departure;
                 """, (
-                    stop_time["trip_id"], stop_time["stop_id"], stop_time["arrival_time"], 
-                    stop_time["departure_time"], stop_time["delay_arrival"], 
-                    stop_time["delay_departure"], stop_time["update_time"]
+                    stop_time["trip_id"], stop_time["departure_date"], stop_time["stop_id"], 
+                    stop_time["arrival_time"], stop_time["departure_time"], 
+                    stop_time["delay_arrival"], stop_time["delay_departure"], 
+                    stop_time["update_time"]
                 ))
 
         # Commit the transaction

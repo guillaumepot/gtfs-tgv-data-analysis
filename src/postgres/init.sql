@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS trips_gtfs_rt (
 
 CREATE TABLE IF NOT EXISTS stop_time_update_gtfs_rt (
   trip_id VARCHAR,
+  departure_date DATE,
   stop_id VARCHAR,
   arrival_time TIMESTAMP,
   departure_time TIMESTAMP,
