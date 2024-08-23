@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS stop_time_update_gtfs_rt (
   delay_departure INT,
   update_time TIMESTAMP,
   CONSTRAINT fk_trip_id FOREIGN KEY (trip_id) REFERENCES trips_gtfs_rt(trip_id),
-  CONSTRAINT unique_stop_time UNIQUE (trip_id, stop_id)
+  CONSTRAINT unique_stop_time UNIQUE (trip_id, departure_date, stop_id)
 );
 
 -- GTFS tables

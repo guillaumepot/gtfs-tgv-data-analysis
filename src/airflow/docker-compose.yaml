@@ -47,7 +47,7 @@ x-airflow-common: &airflow-common
 
 
     # Dags schedulers parameters
-    GTFS_INGESTION_SCHEDULER: '*/5 * * * *' #<--- Every 5 minutes
+    GTFS_INGESTION_SCHEDULER: '*/5 5-23 * * *' # Every 5 minutes from 5am to 11pm
 
 
     # Database parameters

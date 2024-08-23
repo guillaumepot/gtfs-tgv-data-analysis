@@ -160,7 +160,6 @@ def transform_feed(**kwargs) -> list:
 
 
 
-
 def push_feed_data_to_db(**kwargs) -> None:
     """
     Pushes feed data to the database.
