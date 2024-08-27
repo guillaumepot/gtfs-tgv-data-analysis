@@ -1,14 +1,15 @@
+"""
+Test DAG - gtfs rt data ingestion
+"""
+
 # LIB
-from datetime import datetime, timezone
 import os
 import pytest
 import sys
 from unittest import mock
-import requests
-import json
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.airflow.dags.gtfs_data_ingestion_functions import connect_to_postgres, get_gtfs_rt_data, transform_feed, push_feed_data_to_db
+from src.airflow.dags.gtfs_rt_data_ingestion_functions import connect_to_postgres, get_gtfs_rt_data, transform_feed, push_feed_data_to_db
 
 
 # VAR
@@ -107,7 +108,7 @@ def test_transform_feed():
 
 def test_push_feed_data_to_db():
     # Mock the connect_to_postgres function
-    with mock.patch('src.airflow.dags.gtfs_data_ingestion_functions.connect_to_postgres') as mock_connect:
+    with mock.patch('src.airflow.dags.gtfs_rt_data_ingestion_functions.connect_to_postgres') as mock_connect:
         # Mock the connection and cursor
         mock_conn = mock.Mock()
         mock_cursor = mock.Mock()

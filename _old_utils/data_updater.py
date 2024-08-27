@@ -98,7 +98,6 @@ def get_gtfs_rt_data(gtfs_rt_url:str) -> gtfs_realtime_pb2.FeedMessage:
     return feed
 
 
-
 def get_conversion_dict(gtfs_storage_path:str, conversion_dict:str) -> dict:
     """
     
@@ -118,7 +117,6 @@ def get_conversion_dict(gtfs_storage_path:str, conversion_dict:str) -> dict:
     
 
     return requested_dictionary
-
 
 
 def convert_feed_to_dataframe(feed: gtfs_realtime_pb2.FeedMessage, gtfs_storage_path:str) -> pd.DataFrame:
@@ -174,8 +172,6 @@ def convert_feed_to_dataframe(feed: gtfs_realtime_pb2.FeedMessage, gtfs_storage_
     return pd.DataFrame(data, columns=['Trip ID', 'Departure Date', 'Departure Time', 'Arrival Time', 'Stops'])
 
 
-
-
 def clean_feed_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     
@@ -221,7 +217,6 @@ def load_cleaned_feed_df(clean_data_path:str) -> pd.DataFrame:
     return df
 
 
-
 def create_feed() -> None:
     """
     
@@ -231,8 +226,6 @@ def create_feed() -> None:
     df = clean_feed_dataframe(df)
     print('df len:', len(df))
     save_cleaned_feed_df(df, clean_data_path)
-
-
 
 
 def update_feed() -> None:
@@ -259,8 +252,6 @@ def update_feed() -> None:
     save_cleaned_feed_df(df, clean_data_path)
 
 
-
-
 def get_gtfs_files(gtfs_url:str, gtfs_storage_path:str) -> None:
     """
     
@@ -285,7 +276,6 @@ def get_gtfs_files(gtfs_url:str, gtfs_storage_path:str) -> None:
         print("An error occurred:", str(e))
 
 
-
 def get_stop_dictionary(gtfs_storage_path:str) -> None:
     """
 
@@ -308,7 +298,6 @@ def get_stop_dictionary(gtfs_storage_path:str) -> None:
         json.dump(stop_dict, file)
 
 
-
 def get_trip_dictionary(gtfs_storage_path:str) -> None:
     """
 
@@ -329,7 +318,6 @@ def get_trip_dictionary(gtfs_storage_path:str) -> None:
     # Save dictionary
     with open(trip_dict_filepath, "w") as file:
         json.dump(trip_dict, file)
-
 
 
 

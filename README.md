@@ -97,27 +97,55 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ``` yaml
 |
+├── .github                                       # .github directory containing workflows
+|      |
+|      └── workflows
+|              |
+|              ├── requirements_unit_tests.txt    # Unit tests workflow requirements
+|              |
+|              └── start_unit_test.yaml           # Workflow to start Unit Tests
+|
 ├── changelogs         # Changelogs files which contains changes for each new version 
 |
 ├── media              # General directory, contains images & schemas for the repository
 |
-├── notebooks          # Notebooks used to test functions, data exploration. Draft code only.
+├── notebooks          # Scrap notebooks used to test functions, data exploration. Draft code only.
 |
 ├── src                # Contains 'modules' used to run the app
 |    |
-|    ├── airflow       # Airflow files
+|    ├── airflow                                          # Airflow files
+|    |      |
+|    |      ├── config                                    # Config files
+|    |      |
+|    |      ├── dags                                      # Dags directory
+|    |      |    |
+|    |      |    ├── gtfs_data_ingestion.py               # DAG
+|    |      |    |
+|    |      |    ├── gtfs_data_ingestion_functions.py     # Functions for DAG
+|    |      |    |
+|    |      |    ├── gtfs_rt_data_ingestion.py            # DAG
+|    |      |    |
+|    |      |    ├── gtfs_rt_data_ingestion_functions.py  # Functions for DAG
+|    |      |    |
+|    |      |    ├──
+|    |      |    |
+|    |      |    ├──
+|    |      |    |
+|    |      |    ├──
+|    |      |    |
+|    |      |    └──
+|    |      |
+|    |      ├── logs                                      # Logs
+|    |      |
+|    |      └── plugins                                   # Plugins
 |    |
-|    ├── postgres      # Postgres db files
+|    ├── postgres                       # Postgres db files
+|    |      |
+|    |      ├── docker-compose.yaml     # Compose file to start postgres container
+|    |      |
+|    |      └── init.sql                # Table declaration for postgres container
 |    |
-|    └── unit_tests    # Unit tests files
-|
-├── storage
-|      |
-|      ├── cleaned    # Cleaned data
-|      |
-|      ├── gtfs       # GTFS data
-|      |
-|      └── raw        # Raw data 
+|    └── unit_tests                     # Unit tests files
 |
 ├── .gitignore
 |
