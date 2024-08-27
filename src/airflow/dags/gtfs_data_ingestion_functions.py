@@ -5,7 +5,7 @@ Contains functions that are used by the tasks in the Airflow dags
 
 # LIB
 from airflow.models import TaskInstance
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from google.transit import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToDict
 import json
@@ -22,7 +22,7 @@ def connect_to_postgres() -> psycopg2.connect:
     Connects to the database using the provided credentials.
 
     Returns:
-        asyncpg.connection: The connection object representing the connection to the database.
+        psycopg2.connect: The connection object representing the connection to the database.
     """
 
     return psycopg2.connect(user=os.getenv("DATA_PG_USER"),
@@ -49,6 +49,7 @@ def get_gtfs_rt_data(gtfs_rt_url: str) -> str:
     """
 
 
+    # Function to fetch data
     def fetch_data(url: str) -> requests.Response:
         """
         Fetches GTFS-RT data from the given URL.
@@ -62,39 +63,36 @@ def get_gtfs_rt_data(gtfs_rt_url: str) -> str:
         try:
             response = requests.get(url)
             response.raise_for_status()
-            return response
         
         except requests.exceptions.RequestException as e:
-            return None
-
+            logging.error(f"An error occurred while fetching the data: {e}")
+            raise ValueError(f"Failed to fetch data: {e}")
+        
+        else:
+            return response
 
     # Get response
     response = fetch_data(gtfs_rt_url)
-
     # Parse GTFS RT Datas
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(response.content)
-    
     # Convert FeedMessage to dictionary
     feed_dict = MessageToDict(feed)
-    
     # Serialize dictionary to JSON string
     feed_json = json.dumps(feed_dict)
     
     return feed_json
 
 
+
 def transform_feed(**kwargs) -> list:
     """
-    Transform the feed dictionary into a list of trip data and stop times data.
-    
+    Transform the GTFS Real-Time feed data into a list of trip data and stop times data.
     Parameters:
-    - feed_dict (dict): The dictionary containing the feed data.
-    
+    - kwargs: A dictionary of keyword arguments.
     Returns:
-    - tuple: A tuple containing two lists:
-        - all_trip_data (list): A list of dictionaries containing trip data.
-        - all_stop_times_data (list): A list of dictionaries containing stop times data.
+    - all_trip_data: A list of dictionaries containing trip data.
+    - all_stop_times_data: A list of dictionaries containing stop times data.
     """
 
     # Retrieve the XCom value
@@ -104,137 +102,140 @@ def transform_feed(**kwargs) -> list:
     # Convert string to dictionary (from Xcom, the feed_dict is a string)
     feed_dict = json.loads(feed_json)
 
-
     # Remove entity key and keep the list value as dictionary
     feed_dict = feed_dict["entity"]
 
-
     # Generate empty lists
     all_trip_data = []
-    all_stop_times_data = []
+    trip_data = {} # Empty dictionary to store trip data
 
     # Loop through the feed data
     for elt in feed_dict:
         trip_id = elt["tripUpdate"]["trip"]["tripId"]
         departure_date = elt["tripUpdate"]["trip"]["startDate"]
-        departure_time = elt["tripUpdate"]["trip"]["startTime"]
+        origin_departure_time = elt["tripUpdate"]["trip"]["startTime"]
         updated_at = elt["tripUpdate"]["timestamp"]
 
         # Convert Unix timestamp to datetime string to inject into the PG database
         updated_at = int(updated_at)
-        updated_at = datetime.utcfromtimestamp(updated_at).strftime('%Y-%m-%d %H:%M:%S')
-
-
-        # Trip Data
-        trip_data = {
-            "trip_id": trip_id,
-            "departure_date": departure_date,
-            "departure_time": departure_time,
-        }
-
-        all_trip_data.append(trip_data)
+        updated_at = datetime.fromtimestamp(updated_at, timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
         # Stop Times Data
         for stop_time_update in elt["tripUpdate"]["stopTimeUpdate"]:
             stop_id = stop_time_update["stopId"]
-            arrival_time = stop_time_update["arrival"]["time"] if "arrival" in stop_time_update else None
-            departure_time = stop_time_update["departure"]["time"] if "departure" in stop_time_update else None
-            delay_arrival = int(stop_time_update["arrival"]["delay"]/60 if "arrival" in stop_time_update else 0)
-            delay_departure = int(stop_time_update["departure"]["delay"]/60 if "departure" in stop_time_update else 0)
+            stop_arrival_time = stop_time_update["arrival"]["time"] if "arrival" in stop_time_update else None
+            stop_departure_time = stop_time_update["departure"]["time"] if "departure" in stop_time_update else None
+            stop_delay_arrival = int(stop_time_update["arrival"]["delay"]/60 if "arrival" in stop_time_update else 0)
+            stop_delay_departure = int(stop_time_update["departure"]["delay"]/60 if "departure" in stop_time_update else 0)
 
             # Convert Unix timestamps to datetime strings
-            if arrival_time:
-                arrival_time = datetime.utcfromtimestamp(int(arrival_time)).strftime('%Y-%m-%d %H:%M:%S')
-            if departure_time:
-                departure_time = datetime.utcfromtimestamp(int(departure_time)).strftime('%Y-%m-%d %H:%M:%S')
+            if stop_arrival_time is not None:
+                stop_arrival_time = datetime.fromtimestamp(int(stop_arrival_time), timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+            if stop_departure_time is not None:
+                stop_departure_time = datetime.fromtimestamp(int(stop_departure_time), timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
 
-
-            stop_times_data = {
+            trip_data = {
                 "trip_id": trip_id,
+                "departure_date": departure_date,
+                "origin_departure_time": origin_departure_time,
+                "updated_at": updated_at,
                 "stop_id": stop_id,
-                "arrival_time": arrival_time,
-                "departure_time": departure_time,
-                "delay_arrival": delay_arrival,
-                "delay_departure": delay_departure,
-                "update_time": updated_at,
+                "stop_arrival_time": stop_arrival_time,
+                "stop_departure_time": stop_departure_time,
+                "stop_delay_arrival": stop_delay_arrival,
+                "stop_delay_departure": stop_delay_departure
             }
-            
-            all_stop_times_data.append(stop_times_data)
 
-    return all_trip_data, all_stop_times_data
+            all_trip_data.append(trip_data)
+            trip_data = {}
 
-
+    return all_trip_data
 
 
 
 def push_feed_data_to_db(**kwargs) -> None:
     """
-
+    Pushes feed data to the database.
+    Args:
+        **kwargs: Arbitrary keyword arguments.
+    Returns:
+        None
+    Raises:
+        ValueError: If failed to push data to PostgreSQL or an unexpected error occurs.
+        psycopg2.DatabaseError: If there is a database error.    
     """
     # Retrieve the XCom value
     task_instance = kwargs['task_instance']
-    feed_data = task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[0] if kwargs['table'] == 'trips_gtfs_rt' else task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[1]
+    all_trip_data = task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')
 
-    logging.info(f'feed_data first trips: {feed_data[:3]}')
-
-
+    # Initialize the connection and cursor
     conn = None
     cursor = None
+
+
+    # Push data to the database
     try:
+        # Connect to the database
         conn = connect_to_postgres()
         cursor = conn.cursor()
 
-
+    # Raise an error if the connection fails
     except psycopg2.DatabaseError as e:
         logging.error(f"Database error: {e}")
         raise ValueError(f"Failed to push data to PostgreSQL: {e}")
 
+    # Raise an error if an unexpected error occurs
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         raise ValueError(f"An unexpected error occurred: {e}")
 
 
     else:
-
-        # trip table update
-        if kwargs['table']  == "trips_gtfs_rt":
-            for trip in feed_data:
+        # Trips GTFS RT table update
+        if kwargs['table'] == "trips_gtfs_rt":
+            # Loop through the feed data and insert or update the data in the database
+            for trip_row in all_trip_data:
                 cursor.execute(f"""
-                    INSERT INTO {kwargs['table'] } (trip_id, departure_date, departure_time)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (trip_id, departure_date)
-                    DO UPDATE SET departure_time = EXCLUDED.departure_time
-                    WHERE {kwargs['table'] }.departure_time <> EXCLUDED.departure_time;
-                """, (trip["trip_id"], trip["departure_date"], trip["departure_time"]))
-
-        # stop_time_update table update
-        elif kwargs['table']  == "stop_time_update_gtfs_rt":
-            for stop_time in feed_data:
-                cursor.execute(f"""
-                    INSERT INTO {kwargs['table'] } (trip_id, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (trip_id, stop_id)
-                    DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
-                                    departure_time = EXCLUDED.departure_time,
-                                    delay_arrival = EXCLUDED.delay_arrival,
-                                    delay_departure = EXCLUDED.delay_departure,
-                                    update_time = EXCLUDED.update_time
-                    WHERE {kwargs['table'] }.arrival_time <> EXCLUDED.arrival_time
-                    OR {kwargs['table'] }.departure_time <> EXCLUDED.departure_time
-                    OR {kwargs['table'] }.delay_arrival <> EXCLUDED.delay_arrival
-                    OR {kwargs['table'] }.delay_departure <> EXCLUDED.delay_departure;
-                """, (
-                    stop_time["trip_id"], stop_time["stop_id"], stop_time["arrival_time"], 
-                    stop_time["departure_time"], stop_time["delay_arrival"], 
-                    stop_time["delay_departure"], stop_time["update_time"]
+                    INSERT INTO {kwargs['table']} (
+                    trip_id, departure_date, origin_departure_time, updated_at,
+                    stop_id, stop_arrival_time, stop_departure_time,
+                    stop_delay_arrival, stop_delay_departure
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (trip_id, departure_date, stop_id)
+                    DO UPDATE SET
+                        origin_departure_time = EXCLUDED.origin_departure_time,
+                        updated_at = EXCLUDED.updated_at,
+                        stop_arrival_time = EXCLUDED.stop_arrival_time,
+                        stop_departure_time = EXCLUDED.stop_departure_time,
+                        stop_delay_arrival = EXCLUDED.stop_delay_arrival,
+                        stop_delay_departure = EXCLUDED.stop_delay_departure;
+                    """, (
+                        trip_row["trip_id"], 
+                        trip_row["departure_date"], 
+                        trip_row["origin_departure_time"],
+                        trip_row["updated_at"], 
+                        trip_row["stop_id"], 
+                        trip_row["stop_arrival_time"], 
+                        trip_row["stop_departure_time"], 
+                        trip_row["stop_delay_arrival"], 
+                        trip_row["stop_delay_departure"]
                 ))
 
-        conn.commit()
+
+            # Commit the transaction
+            conn.commit()
+
+        # Wrong table name
+        else:
+            raise ValueError(f"Invalid table name: {kwargs['table']}")
+
     
+    # Close the cursor and connection
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-

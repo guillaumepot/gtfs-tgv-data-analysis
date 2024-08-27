@@ -5,23 +5,19 @@
 
 -- GTFS RT tables
 CREATE TABLE IF NOT EXISTS trips_gtfs_rt (
-  trip_id VARCHAR PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
+  trip_id VARCHAR,
   departure_date DATE,
-  departure_time TIME,
-  CONSTRAINT unique_trip UNIQUE (trip_id, departure_date)
+  origin_departure_time TIME,
+  stop_id VARCHAR,
+  stop_arrival_time TIMESTAMP,
+  stop_departure_time TIMESTAMP,
+  stop_delay_arrival INT,
+  stop_delay_departure INT,
+  updated_at TIMESTAMP,
+  CONSTRAINT unique_trip_stop UNIQUE (trip_id, departure_date, stop_id)
 );
 
-CREATE TABLE IF NOT EXISTS stop_time_update_gtfs_rt (
-  trip_id VARCHAR,
-  stop_id VARCHAR,
-  arrival_time TIMESTAMP,
-  departure_time TIMESTAMP,
-  delay_arrival INT,
-  delay_departure INT,
-  update_time TIMESTAMP,
-  CONSTRAINT fk_trip_id FOREIGN KEY (trip_id) REFERENCES trips_gtfs_rt(trip_id),
-  CONSTRAINT unique_stop_time UNIQUE (trip_id, stop_id)
-);
 
 -- GTFS tables
 CREATE TABLE IF NOT EXISTS routes_gtfs (

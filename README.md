@@ -17,14 +17,14 @@ This project covers Data engineering, Datascience & Mlops.
 ## Current Features
 
 
-- Get & update (every 5 mins) GTFS Real Time datas, add these datas to a postgres Database.
+- Get & update (every hours) GTFS Real Time datas, add these datas to a postgres Database.
 
 
 
 
 ## Project Information
 
-- **Version**: 0.0.1
+- **Version**: 0.0.2
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
 
@@ -146,6 +146,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Changelogs
 
+[v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
 
 
@@ -176,8 +177,23 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Airflow
 
+The schemas below display dags Airflow executes to fetch datas.
+
+
+<b> GTFS RT Ingestion Dag </b>
+- Schedule: Every 5 minutes 24/7
+<img src="./media/GTFS _RT_ingestion_dag.png">
+
+
 ### PostGres
 
+The schema below shows tables and relations for the database.
+Ingested datas are GTFS & GFTS RT.
+
+GTFS RT datas are updated every 5 minutes.
+GTFS datas are updated once a day.
+
+<img src="./media/PostgresDiagram.png">
 
 
 
