@@ -17,14 +17,14 @@ This project covers Data engineering, Datascience & Mlops.
 ## Current Features
 
 
-- Get & update (every 5 mins) GTFS Real Time datas, add these datas to a postgres Database.
+- Get & update (every hours) GTFS Real Time datas, add these datas to a postgres Database.
 
 
 
 
 ## Project Information
 
-- **Version**: 0.0.1
+- **Version**: 0.0.2
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
 
