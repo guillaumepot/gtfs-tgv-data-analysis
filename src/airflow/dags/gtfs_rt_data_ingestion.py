@@ -13,7 +13,7 @@ import datetime
 import os
 
 # task functions
-from airflow.dags.gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
+from gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
 
 
 
@@ -148,8 +148,6 @@ gtfs_rt_ingestion_dag = DAG(
 
 ### TASKS ###
 
-
-# GTFS RT TASKS
 get_feed_gtfs_rt = PythonOperator(
     task_id = 'get_feed_gtfs_rt',
     dag = gtfs_rt_ingestion_dag,

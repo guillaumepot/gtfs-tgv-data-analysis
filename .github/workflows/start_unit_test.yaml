@@ -32,10 +32,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r ./.github/workflows/requirements_unit_tests.txt
 
-    - name: Run GTFS ingestion function tests
+    - name: Run GTFS RT ingestion function tests
       run: |
         cd ./src/unit_tests/
-        pytest test_gtfs_data_ingestion_functions.py
+        pytest test_gtfs_rt_data_ingestion_functions.py
 
 
     - name: Notify owner by email if tests fail

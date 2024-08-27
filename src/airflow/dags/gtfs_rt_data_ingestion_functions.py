@@ -4,32 +4,16 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
-from airflow.models import TaskInstance
 from datetime import datetime, timezone
 from google.transit import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToDict
 import json
 import logging
-import os
 import psycopg2
 import requests
 
 
-
-# COMMON FUNCTIONS
-def connect_to_postgres() -> psycopg2.connect:
-    """
-    Connects to the database using the provided credentials.
-
-    Returns:
-        psycopg2.connect: The connection object representing the connection to the database.
-    """
-
-    return psycopg2.connect(user=os.getenv("DATA_PG_USER"),
-                            password=os.getenv("DATA_PG_PASSWORD"),
-                            dbname=os.getenv("DATA_PG_DB"),
-                            host=os.getenv("DATA_PG_HOST"),
-                            port=os.getenv("DATA_PG_PORT"))
+from common_functions import connect_to_postgres
             
 
 
@@ -225,12 +209,14 @@ def push_feed_data_to_db(**kwargs) -> None:
                 ))
 
 
-            # Commit the transaction
-            conn.commit()
 
         # Wrong table name
         else:
             raise ValueError(f"Invalid table name: {kwargs['table']}")
+        
+        
+        # Commit the transaction
+        conn.commit()
 
     
     # Close the cursor and connection

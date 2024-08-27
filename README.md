@@ -77,8 +77,9 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ## Installation
 
--
--
+- Create a postgres_data folder to store Postgres data
+- Create a storage folder to store datas and update path in airflow .env file
+    - Airflow volume needs these directories : raw | clean | gtfs
 
 
 

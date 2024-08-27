@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS routes_gtfs (
   route_short_name VARCHAR,
   route_long_name VARCHAR,
   route_type INT,
-  location_type INT
+  route_name VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS stops_gtfs (

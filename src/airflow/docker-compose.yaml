@@ -48,7 +48,7 @@ x-airflow-common: &airflow-common
 
     # Dags schedulers parameters
     GTFS_RT_INGESTION_SCHEDULER: '* 5-23 * * *' # Every hour from 5am to 11pm
-    GTFS_INGESTION_SCHEDULER: '0 12 * * 0' # At 12:00 on Sunday
+    GTFS_INGESTION_SCHEDULER: '0 22 * * *' # At 22:00 every day
 
 
     # Database parameters
@@ -66,9 +66,9 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 
-    - ${STORAGE_DIR}/raw:/opt/airflow/data/raw
-    - ${STORAGE_DIR}/cleaned:/opt/airflow/data/cleaned
-    - ${STORAGE_DIR}/gtfs:/opt/airflow/data/gtfs
+    - ${STORAGE_DIR}/raw:/opt/airflow/storage/raw
+    - ${STORAGE_DIR}/cleaned:/opt/airflow/storage/cleaned
+    - ${STORAGE_DIR}/gtfs:/opt/airflow/storage/gtfs
 
 
   # Run Airflow with a specified user ID, defaulting to 50000.  
