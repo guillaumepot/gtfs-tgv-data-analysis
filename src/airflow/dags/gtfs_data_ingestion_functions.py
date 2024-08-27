@@ -107,56 +107,50 @@ def transform_feed(**kwargs) -> list:
 
     # Generate empty lists
     all_trip_data = []
-    all_stop_times_data = []
+    trip_data = {} # Empty dictionary to store trip data
 
     # Loop through the feed data
     for elt in feed_dict:
         trip_id = elt["tripUpdate"]["trip"]["tripId"]
         departure_date = elt["tripUpdate"]["trip"]["startDate"]
-        departure_time = elt["tripUpdate"]["trip"]["startTime"]
+        origin_departure_time = elt["tripUpdate"]["trip"]["startTime"]
         updated_at = elt["tripUpdate"]["timestamp"]
 
         # Convert Unix timestamp to datetime string to inject into the PG database
         updated_at = int(updated_at)
         updated_at = datetime.utcfromtimestamp(updated_at).strftime('%Y-%m-%d %H:%M:%S')
 
-        # Trip Data
-        trip_data = {
-            "trip_id": trip_id,
-            "departure_date": departure_date,
-            "departure_time": departure_time,
-        }
-
-        all_trip_data.append(trip_data)
 
         # Stop Times Data
         for stop_time_update in elt["tripUpdate"]["stopTimeUpdate"]:
             stop_id = stop_time_update["stopId"]
-            arrival_time = stop_time_update["arrival"]["time"] if "arrival" in stop_time_update else None
-            departure_time = stop_time_update["departure"]["time"] if "departure" in stop_time_update else None
-            delay_arrival = int(stop_time_update["arrival"]["delay"]/60 if "arrival" in stop_time_update else 0)
-            delay_departure = int(stop_time_update["departure"]["delay"]/60 if "departure" in stop_time_update else 0)
+            stop_arrival_time = stop_time_update["arrival"]["time"] if "arrival" in stop_time_update else None
+            stop_departure_time = stop_time_update["departure"]["time"] if "departure" in stop_time_update else None
+            stop_delay_arrival = int(stop_time_update["arrival"]["delay"]/60 if "arrival" in stop_time_update else 0)
+            stop_delay_departure = int(stop_time_update["departure"]["delay"]/60 if "departure" in stop_time_update else 0)
 
             # Convert Unix timestamps to datetime strings
-            if arrival_time:
-                arrival_time = datetime.utcfromtimestamp(int(arrival_time)).strftime('%Y-%m-%d %H:%M:%S')
-            if departure_time:
-                departure_time = datetime.utcfromtimestamp(int(departure_time)).strftime('%Y-%m-%d %H:%M:%S')
+            if stop_arrival_time:
+                stop_arrival_time = datetime.utcfromtimestamp(int(stop_arrival_time)).strftime('%Y-%m-%d %H:%M:%S')
+            if stop_departure_time:
+                stop_departure_time = datetime.utcfromtimestamp(int(stop_departure_time)).strftime('%Y-%m-%d %H:%M:%S')
 
-            stop_times_data = {
+            trip_data = {
                 "trip_id": trip_id,
                 "departure_date": departure_date,
+                "origin_departure_time": origin_departure_time,
+                "updated_at": updated_at,
                 "stop_id": stop_id,
-                "arrival_time": arrival_time,
-                "departure_time": departure_time,
-                "delay_arrival": delay_arrival,
-                "delay_departure": delay_departure,
-                "update_time": updated_at,
+                "stop_arrival_time": stop_arrival_time,
+                "stop_departure_time": stop_departure_time,
+                "stop_delay_arrival": stop_delay_arrival,
+                "stop_delay_departure": stop_delay_departure
             }
-            
-            all_stop_times_data.append(stop_times_data)
 
-    return all_trip_data, all_stop_times_data
+            all_trip_data.append(trip_data)
+            trip_data = {}
+
+    return all_trip_data
 
 
 
@@ -173,11 +167,12 @@ def push_feed_data_to_db(**kwargs) -> None:
     """
     # Retrieve the XCom value
     task_instance = kwargs['task_instance']
-    feed_data = task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[0] if kwargs['table'] == 'trips_gtfs_rt' else task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')[1]
+    all_trip_data = task_instance.xcom_pull(task_ids='transform_feed_gtfs_rt')
 
     # Initialize the connection and cursor
     conn = None
     cursor = None
+
 
     # Push data to the database
     try:
@@ -195,45 +190,47 @@ def push_feed_data_to_db(**kwargs) -> None:
         logging.error(f"Unexpected error: {e}")
         raise ValueError(f"An unexpected error occurred: {e}")
 
+
     else:
-        # trip table update
+        # Trips GTFS RT table update
         if kwargs['table'] == "trips_gtfs_rt":
             # Loop through the feed data and insert or update the data in the database
-            for trip in feed_data:
+            for trip_row in all_trip_data:
                 cursor.execute(f"""
-                    INSERT INTO {kwargs['table']} (trip_id, departure_date, departure_time)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (trip_id, departure_date)
-                    DO UPDATE SET departure_time = EXCLUDED.departure_time
-                    WHERE {kwargs['table']}.departure_time <> EXCLUDED.departure_time;
-                """, (trip["trip_id"], trip["departure_date"], trip["departure_time"]))
-
-        # stop_time_update table update
-        elif kwargs['table'] == "stop_time_update_gtfs_rt":
-            # Loop through the feed data and insert or update the data in the database
-            for stop_time in feed_data:
-                cursor.execute(f"""
-                    INSERT INTO {kwargs['table']} (trip_id, departure_date, stop_id, arrival_time, departure_time, delay_arrival, delay_departure, update_time)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO {kwargs['table']} (
+                    trip_id, departure_date, origin_departure_time, updated_at,
+                    stop_id, stop_arrival_time, stop_departure_time,
+                    stop_delay_arrival, stop_delay_departure
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (trip_id, departure_date, stop_id)
-                    DO UPDATE SET arrival_time = EXCLUDED.arrival_time,
-                                  departure_time = EXCLUDED.departure_time,
-                                  delay_arrival = EXCLUDED.delay_arrival,
-                                  delay_departure = EXCLUDED.delay_departure,
-                                  update_time = EXCLUDED.update_time
-                    WHERE {kwargs['table']}.arrival_time <> EXCLUDED.arrival_time
-                    OR {kwargs['table']}.departure_time <> EXCLUDED.departure_time
-                    OR {kwargs['table']}.delay_arrival <> EXCLUDED.delay_arrival
-                    OR {kwargs['table']}.delay_departure <> EXCLUDED.delay_departure;
-                """, (
-                    stop_time["trip_id"], stop_time["departure_date"], stop_time["stop_id"], 
-                    stop_time["arrival_time"], stop_time["departure_time"], 
-                    stop_time["delay_arrival"], stop_time["delay_departure"], 
-                    stop_time["update_time"]
+                    DO UPDATE SET
+                        origin_departure_time = EXCLUDED.origin_departure_time,
+                        updated_at = EXCLUDED.updated_at,
+                        stop_arrival_time = EXCLUDED.stop_arrival_time,
+                        stop_departure_time = EXCLUDED.stop_departure_time,
+                        stop_delay_arrival = EXCLUDED.stop_delay_arrival,
+                        stop_delay_departure = EXCLUDED.stop_delay_departure;
+                    """, (
+                        trip_row["trip_id"], 
+                        trip_row["departure_date"], 
+                        trip_row["origin_departure_time"],
+                        trip_row["updated_at"], 
+                        trip_row["stop_id"], 
+                        trip_row["stop_arrival_time"], 
+                        trip_row["stop_departure_time"], 
+                        trip_row["stop_delay_arrival"], 
+                        trip_row["stop_delay_departure"]
                 ))
 
-        # Commit the transaction
-        conn.commit()
+
+            # Commit the transaction
+            conn.commit()
+
+        # Wrong table name
+        else:
+            raise ValueError(f"Invalid table name: {kwargs['table']}")
+
     
     # Close the cursor and connection
     finally:

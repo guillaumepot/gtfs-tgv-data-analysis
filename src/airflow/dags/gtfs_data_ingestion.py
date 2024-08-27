@@ -20,7 +20,7 @@ from gtfs_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push
 
 
 # VARS
-dag_scheduler = os.getenv('GTFS_INGESTION_SCHEDULER', None)
+dag_scheduler = os.getenv('GTFS_RT_INGESTION_SCHEDULER', None)
 
 
 # DAG
@@ -143,39 +143,5 @@ push_trip_data_to_db = PythonOperator(
 
 
 
-push_stop_times_data_to_db = PythonOperator(
-    task_id = 'push_stop_times_data_to_db',
-    dag = gtfs_rt_ingestion_dag,
-    python_callable = push_feed_data_to_db,
-    op_kwargs = {'table': 'stop_time_update_gtfs_rt'},
-    retries = 3,
-    retry_delay = datetime.timedelta(seconds=20),
-    on_failure_callback=None,
-    on_success_callback=None,
-    trigger_rule='all_success',
-    doc_md = """
-    ### Task Documentation: push_stop_times_data_to_db
-
-    This task is responsible for pushing stop times data to the `stop_time_update_gtfs_rt` table in the PostgreSQL database.
-
-    **Parameters:**
-    - `table` (str): The name of the table to push data to. In this case, it is set to 'stop_time_update_gtfs_rt'.
-
-    **Retries:**
-    - The task will retry 3 times in case of failure, with a delay of 20 seconds between retries.
-
-    **Trigger Rule:**
-    - The task uses the 'all_success' trigger rule, meaning it will only run if all upstream tasks have succeeded.
-
-    **Callbacks:**
-    - No specific callbacks are defined for success or failure.
-
-    **Functionality:**
-    - The task calls the `push_feed_data_to_db` function to push stop times data to the PostgreSQL database.
-    - It retrieves the stop times data from XCom and inserts or updates the data in the `stop_time_update_gtfs_rt` table.
-    """
-    )
-
-
 # DEPENDENCIES
-get_feed_gtfs_rt >> transform_feed_gtfs_rt >> (push_trip_data_to_db, push_stop_times_data_to_db)
+get_feed_gtfs_rt >> transform_feed_gtfs_rt >> push_trip_data_to_db
