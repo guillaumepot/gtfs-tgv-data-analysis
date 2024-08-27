@@ -5,7 +5,7 @@ Contains functions that are used by the tasks in the Airflow dags
 
 # LIB
 from airflow.models import TaskInstance
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from google.transit import gtfs_realtime_pb2
 from google.protobuf.json_format import MessageToDict
 import json
@@ -118,8 +118,7 @@ def transform_feed(**kwargs) -> list:
 
         # Convert Unix timestamp to datetime string to inject into the PG database
         updated_at = int(updated_at)
-        updated_at = datetime.utcfromtimestamp(updated_at).strftime('%Y-%m-%d %H:%M:%S')
-
+        updated_at = datetime.fromtimestamp(updated_at, timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
         # Stop Times Data
         for stop_time_update in elt["tripUpdate"]["stopTimeUpdate"]:
@@ -130,10 +129,12 @@ def transform_feed(**kwargs) -> list:
             stop_delay_departure = int(stop_time_update["departure"]["delay"]/60 if "departure" in stop_time_update else 0)
 
             # Convert Unix timestamps to datetime strings
-            if stop_arrival_time:
-                stop_arrival_time = datetime.utcfromtimestamp(int(stop_arrival_time)).strftime('%Y-%m-%d %H:%M:%S')
-            if stop_departure_time:
-                stop_departure_time = datetime.utcfromtimestamp(int(stop_departure_time)).strftime('%Y-%m-%d %H:%M:%S')
+            if stop_arrival_time is not None:
+                stop_arrival_time = datetime.fromtimestamp(int(stop_arrival_time), timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+            if stop_departure_time is not None:
+                stop_departure_time = datetime.fromtimestamp(int(stop_departure_time), timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
 
             trip_data = {
                 "trip_id": trip_id,
