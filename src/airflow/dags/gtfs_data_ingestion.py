@@ -13,15 +13,17 @@ from airflow.sensors.filesystem import FileSensor
 import datetime
 import os
 
-# task functions
+# Task functions
 from gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_to_dataframe, data_transformer, ingest_gtfs_data_to_database
-from common_functions import clear_raw_files, clear_xcoms
+from common_functions import clear_raw_files
 
 
 # VARS
 dag_scheduler = os.getenv('GTFS_INGESTION_SCHEDULER', None)
 gtfs_storage_path = "/opt/airflow/storage/gtfs/"
 gtfs_url = "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip"
+
+
 
 # Define the expected files the GTFS feed should have
 expected_files = [
@@ -81,7 +83,7 @@ for file_name in expected_files:
     # Sensors: Check if the files are downloaded
     file_sensor = FileSensor(
         task_id=f"check_{file_name}",
-        dag=gtfs_ingestion_dag,
+        dag=gtfs_ingestion_dag, 
         fs_conn_id="fs_default",
         filepath=f'{gtfs_storage_path}{file_name}',
         poke_interval=60,
@@ -112,9 +114,9 @@ for file_name in expected_files:
 
     file_base_name = file_name.split('.')[0]  # Remove .txt extension
 
-
+                                ######################################################" CONTINUE FROM HERE"
     # Transform datas
-    data_transformer_task = PythonOperator(
+    data_transformer = PythonOperator(
         task_id=f'transform_{file_base_name}',
         dag=gtfs_ingestion_dag,
         python_callable=data_transformer,
@@ -129,7 +131,7 @@ for file_name in expected_files:
         # WIP
         """
     )
-    data_transformers.append(data_transformer_task)
+    data_transformers.append(data_transformer)
 
 
 
@@ -155,7 +157,7 @@ for file_name in expected_files:
 
 
 # Clear raw files
-clear_raw_files_task = PythonOperator(
+clear_raw_files = PythonOperator(
     task_id='clear_raw_files',
     dag=gtfs_ingestion_dag,
     python_callable=clear_raw_files,
@@ -171,29 +173,14 @@ clear_raw_files_task = PythonOperator(
     """
 )
 
-# Clear Xcoms
-clear_xcoms_task = PythonOperator(
-    task_id='clear_xcoms',
-    dag=gtfs_ingestion_dag,
-    python_callable=clear_xcoms,
-    provide_context=True,
-    retries=1,
-    retry_delay=datetime.timedelta(seconds=30),
-    on_failure_callback=None,
-    on_success_callback=None,
-    trigger_rule='all_done',
-    doc_md="""
-    # Clear XComs
-    This task clears all XComs created by the DAG run.
-    """
-)
+
 
 
 
 # DEPENDENCIES
 get_gtfs_files >> file_sensors
 
-for file_sensor, df_loader, data_transformer_task, data_ingestion_task in zip(file_sensors, df_loaders, data_transformers, data_ingesters):
-    file_sensor >> df_loader >> data_transformer_task >> data_ingestion_task
+for file_sensor, df_loader, data_transformer, data_ingestion_task in zip(file_sensors, df_loaders, data_transformers, data_ingesters):
+    file_sensor >> df_loader >> data_transformer >> data_ingestion_task
 
-data_ingesters >> clear_raw_files_task >> clear_xcoms_task
+data_ingesters >> clear_raw_files

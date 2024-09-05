@@ -41,15 +41,3 @@ def clear_raw_files(storage_path: str) -> None:
                 logging.info(f"Deleted file: {file_path}")
     except Exception as e:
         raise e
-
-
-
-def clear_xcoms(**kwargs) -> None:
-    """
-    Clear all XComs for the current DAG run.
-    """
-    dag_id = kwargs['dag'].dag_id
-    execution_date = kwargs['execution_date']
-    session = kwargs['ti'].get_dagrun().get_session()
-    
-    XCom.clear(dag_id=dag_id, execution_date=execution_date, session=session)

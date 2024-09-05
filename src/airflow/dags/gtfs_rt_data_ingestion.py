@@ -8,7 +8,6 @@ from airflow import DAG
 from airflow.utils.dates import days_ago
 from airflow.operators.python_operator import PythonOperator
 
-
 import datetime
 import os
 
@@ -16,9 +15,9 @@ import os
 from gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
 
 
-
 # VARS
 dag_scheduler = os.getenv('GTFS_RT_INGESTION_SCHEDULER', None)
+
 
 
 # DAG

@@ -49,7 +49,7 @@ x-airflow-common: &airflow-common
     # Dags schedulers parameters
     GTFS_RT_INGESTION_SCHEDULER: '* 5-23 * * *' # Every hour from 5am to 11pm
     GTFS_INGESTION_SCHEDULER: '0 22 * * *' # At 22:00 every day
-
+    REMOVE_XCOMS_SCHEDULER: '0 3 * * *' # At 3:00 every day
 
     # Database parameters
     DATA_PG_HOST: train_delay_postgres
@@ -57,6 +57,11 @@ x-airflow-common: &airflow-common
     DATA_PG_USER: root
     DATA_PG_PASSWORD: root
     DATA_PG_DB: train_delay_db
+
+
+    # Define the fs_default connection
+    AIRFLOW_CONN_FS_DEFAULT: 'fs://:@/opt/airflow/storage/gtfs'
+
 
 
   # Volume mappings for Airflow configurations

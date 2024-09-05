@@ -7,8 +7,6 @@ Contains functions that are used by the tasks in the Airflow dags
 from airflow.models import TaskInstance
 import ast
 from datetime import datetime, timezone
-from google.transit import gtfs_realtime_pb2
-from google.protobuf.json_format import MessageToDict
 import json
 import logging
 import os
@@ -70,7 +68,6 @@ def load_gtfs_data_to_dataframe(**kwargs) -> dict:
         FileNotFoundError: If the specified file does not exist.
         Exception: If the specified file is not supported or does not exist.
     """
-    
     # Check if the file exists
     filepath = kwargs.get('filepath')
     if not filepath or not os.path.exists(filepath):
@@ -252,7 +249,7 @@ def data_transformer(**kwargs) -> list:
         # Retrieve the XCom value
         json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
         # Transform the data
-        transformed_data = transform_trips(json_datas))
+        transformed_data = transform_trips(json_datas)
 
 
     return transformed_data
