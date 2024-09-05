@@ -163,11 +163,11 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ├── main    # Main branch, contains releases
 |   
-├── build   # Used to build releases
+├── build   # Used to build releases  (eg: build-0.0.3)
 |
-├── debug   # Debug branch
+├── debug   # Debug branch  (eg: debug-0.0.4)
 |
-└── develop # New features development branch
+└── develop # New features development branch (eg: dev-0.0.4)
 
 ```
 

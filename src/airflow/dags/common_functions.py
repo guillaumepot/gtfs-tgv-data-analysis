@@ -4,6 +4,7 @@ Contains common functions that are used by the tasks in the Airflow dags
 
 
 # LIB
+import logging
 import os
 import psycopg2
 
@@ -24,3 +25,31 @@ def connect_to_postgres() -> psycopg2.connect:
                             host=os.getenv("DATA_PG_HOST"),
                             port=os.getenv("DATA_PG_PORT"))
             
+
+
+def clear_raw_files(storage_path: str) -> None:
+    """
+    Clear all raw files in the specified GTFS storage path.
+    Args:
+        storage_path (str): The path to the storage directory.
+    """
+    try:
+        for filename in os.listdir(storage_path):
+            file_path = os.path.join(storage_path, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+                logging.info(f"Deleted file: {file_path}")
+    except Exception as e:
+        raise e
+
+
+
+def clear_xcoms(**kwargs) -> None:
+    """
+    Clear all XComs for the current DAG run.
+    """
+    dag_id = kwargs['dag'].dag_id
+    execution_date = kwargs['execution_date']
+    session = kwargs['ti'].get_dagrun().get_session()
+    
+    XCom.clear(dag_id=dag_id, execution_date=execution_date, session=session)
