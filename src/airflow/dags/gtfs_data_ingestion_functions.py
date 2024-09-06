@@ -4,8 +4,7 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
-#from airflow.models import TaskInstance
-#import json
+import json
 import logging
 import os
 import pandas as pd
@@ -206,8 +205,19 @@ def data_cleaner(**kwargs) -> list:
 
 def ingest_gtfs_data_to_database(**kwargs) -> None:
     """
-    
+    Ingests GTFS data into the database.
+    Args:
+        **kwargs: Keyword arguments containing the following parameters:
+            - task_instance (TaskInstance): The task instance.
+            - file (str): The file name.
+    Raises:
+        ValueError: If task_instance or file is not provided.
+        ValueError: If no data is found for the corresponding task_id.
+        ValueError: If no query or data template is found for the given file.
+    Returns:
+        None
     """
+
     task_instance = kwargs.get('task_instance')
     if not task_instance:
         raise ValueError("task_instance is required in kwargs")
@@ -223,7 +233,7 @@ def ingest_gtfs_data_to_database(**kwargs) -> None:
         raise ValueError(f"No data found for task_id transform_{file}")
 
 
-    #transformed_data_json = json.loads(transformed_data_json) # TEST SI ERREUR
+    transformed_data_json = json.loads(transformed_data_json) # TEST SI ERREUR
 
 
     # Get the query and the corresponding data

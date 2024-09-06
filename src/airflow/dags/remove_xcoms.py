@@ -29,7 +29,7 @@ gtfs_ingestion_dag = DAG(
     schedule_interval =  dag_scheduler,
     start_date = days_ago(1),
     doc_md = """
-    # WIP
+    Clean all XComs from the Airflow database using a task.
             """)
 
 
@@ -51,7 +51,7 @@ remove_xcoms = PythonOperator(
     python_callable = cleanup_xcom,
     trigger_rule='dummy',
     doc_md = """
-    # WIP
+    Call a function to cleanup all XComs from the Airflow database.
     """
     )
 
