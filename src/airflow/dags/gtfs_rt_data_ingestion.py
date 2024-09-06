@@ -13,10 +13,11 @@ import os
 
 # task functions
 from gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
-
+from common_functions import load_url
 
 # VARS
 dag_scheduler = os.getenv('GTFS_RT_INGESTION_SCHEDULER', None)
+gtfs_rt_url = load_url("gtfs_rt_url")
 
 
 
@@ -151,7 +152,7 @@ get_feed_gtfs_rt = PythonOperator(
     task_id = 'get_feed_gtfs_rt',
     dag = gtfs_rt_ingestion_dag,
     python_callable = get_gtfs_rt_data,
-    op_kwargs = {'gtfs_rt_url':"https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates"},
+    op_kwargs = {'gtfs_rt_url': gtfs_rt_url},
     retries = 2,
     retry_delay = datetime.timedelta(seconds=30),
     on_failure_callback=None,

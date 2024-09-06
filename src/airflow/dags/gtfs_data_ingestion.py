@@ -15,13 +15,14 @@ import os
 
 # Task functions
 from gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_from_file, data_cleaner, ingest_gtfs_data_to_database
-from common_functions import clear_raw_files
+from common_functions import clear_raw_files, load_url
 
 
 # VARS
 dag_scheduler = os.getenv('GTFS_INGESTION_SCHEDULER', None)
 gtfs_storage_path = "/opt/airflow/storage/gtfs/"
-gtfs_url = "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip"
+gtfs_url = load_url("gtfs_url")
+
 
 
 

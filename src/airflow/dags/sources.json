@@ -1,0 +1,8 @@
+{ 
+    "gtfs_rt_url": "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates",
+    "gtfs_url": "https://eu.ftp.opendatasoft.com/sncf/gtfs/export_gtfs_voyages.zip",
+    "gares_de_voyageurs": "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/gares-de-voyageurs/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B",
+    "occupation_gares": "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/frequentation-gares/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B",
+    "ponctualite_globale_tgv": "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/reglarite-mensuelle-tgv-nationale/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B",
+    "ponctualite_tgv_par_route": "https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/regularite-mensuelle-tgv-aqst/exports/csv?lang=fr&timezone=Europe%2FBerlin&use_labels=true&delimiter=%3B"
+}

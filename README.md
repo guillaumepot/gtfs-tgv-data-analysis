@@ -184,14 +184,25 @@ GTFS is supported around the world and its use, importance, and scope has been i
 ### Roadmap
 
 ```
-- BI board for data analysis
-- Station & train routes graph
-- Train itinary map
+0.0.3
+- Unit tests functions (gtfs data ingestion + ETL files form open data sources + common functions)
+- Create functions for open data soruces
+- Add dag img in media
+
+
+0.0.4
 - Get next trains from a station script
-- Display a train informations script
+- Display a train informations script + Train itinary map | Station & train routes graph
+
+0.0.5
+- Station & lines graph (Neo4J DB)
+
+0.0.6
+- BI board -> data analysis
+
+0.0.7
 - Train delay prediction (classification)
 - Train time delay prediction (regression)
-
 ```
 
 
@@ -221,9 +232,22 @@ The schemas below display dags Airflow executes to fetch datas.
 <img src="./media/GTFS_ingestion_dag.png">
 
 
+
+<b> DAG ETL - Get open data files from source</b>
+- Schedule: First day of each month
+<img src="./media/ETL_open_data_files_from_source_dag.png">
+
+
+
+
 Xcom remover dag is used to clean all Xcoms, it is triggered every day at 03:00am
 <b> Xcom Remover </b>
 <img src="./media/Xcom_remover_dag.png">
+
+
+
+
+
 
 
 
