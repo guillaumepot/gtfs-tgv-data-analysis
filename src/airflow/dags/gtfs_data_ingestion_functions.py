@@ -137,8 +137,9 @@ def data_cleaner(**kwargs) -> list:
         Transform the calendar dates data.
         """
         # Ensure the date column is in the correct format
-        df['date'] = pd.to_datetime(df['date'], format='%Y%m%d').dt.date
+        df['date'] = pd.to_datetime(df['date'], format='%Y%m%d').dt.strftime('%Y-%m-%d')
         return df
+
 
     def transform_stops(df:pd.DataFrame) -> pd.DataFrame:
         """
