@@ -4,20 +4,17 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
-from airflow.models import TaskInstance
-import ast
-from datetime import datetime, timezone
-import json
+#from airflow.models import TaskInstance
+#import json
 import logging
 import os
 import pandas as pd
-import psycopg2
 import requests
-from typing import Optional
 import zipfile
 
 
 from common_functions import connect_to_postgres
+from gtfs_queries import queries
 
 
 # TASKS FUNCTIONS
@@ -56,7 +53,7 @@ def get_gtfs_files(gtfs_url:str, gtfs_storage_path:str) -> None:
 
 
 
-def load_gtfs_data_to_dataframe(**kwargs) -> dict:
+def load_gtfs_data_from_file(**kwargs) -> dict:
     """
     Load GTFS data from a file into a pandas DataFrame and convert it to a JSON string.
     Args:
@@ -78,32 +75,43 @@ def load_gtfs_data_to_dataframe(**kwargs) -> dict:
     logging.info(f"Dataframe loaded, shape: {df.shape}")
 
     # Convert the dataframe to a JSON string
-    df_json = df.to_json(orient='records')
-
-    # Send as XCom
-    return {'df_json': df_json}
+    return df.to_json(orient='records')
 
 
 
-def data_transformer(**kwargs) -> list:
+def data_cleaner(**kwargs) -> list:
     """
-    Transform the data based on the given file.
-    Parameters:
-    - kwargs: A dictionary containing the following key-value pairs:
-        - file (str): The name of the file to be transformed.
-    Returns:
-    - cleaned_json_list (list): A list of transformed JSON strings.
+    Clean and transform GTFS data based on the specified file.
+        **kwargs: Keyword arguments containing the necessary parameters.
+            - task_instance: The task instance object.
+            - file: The name of the file to be transformed.
+        list: The transformed data in JSON format.
+    Raises:
+        ValueError: If task_instance or file is not provided in kwargs.
     """
-    
+
+    def load_json_as_df(json_datas:dict) -> pd.DataFrame:
+        """
+        Load a JSON string as a pandas DataFrame.
+        Args:
+            json_datas (dict): The JSON string to load.
+        Returns:
+            pd.DataFrame: The JSON data loaded into a DataFrame.
+        """
+        return pd.read_json(json_datas)
+
+    def reverse_json_to_df(df:pd.DataFrame) -> dict:
+        """
+        Reverse the JSON string to a pandas DataFrame.
+        """
+        return df.to_json(orient='records')
+
+
     # Functions to transform the data depending on the file
-    def transform_routes(json_datas:dict) -> dict:
+    def transform_routes(df:pd.DataFrame) -> pd.DataFrame:
         """
         Transform the routes data.
         """
-
-        # Load json datas as a dataframe
-        df = pd.read_json(json_datas)
-
         # Remove unnecessary columns
         df.drop(columns=['agency_id', 'route_desc', 'route_url', 'route_color', 'route_text_color'], inplace=True)
 
@@ -122,137 +130,77 @@ def data_transformer(**kwargs) -> list:
 
         df['route_name'] = df['route_type'].apply(lambda x: transports[x] if x in transports else 'unknown')
 
-        # Convert the dataframe to a JSON string
-        json_datas = df.to_json(orient='records')
+        return df
 
-        return json_datas
-
-
-    def transform_calendar_dates(json_datas:dict) -> dict:
+    def transform_calendar_dates(df:pd.DataFrame) -> pd.DataFrame:
         """
         Transform the calendar dates data.
         """
+        return df
 
-        # Load json datas as a dataframe
-        df = pd.read_json(json_datas)
-
-        # Convert the dataframe to a JSON string
-        json_datas = df.to_json(orient='records')
-
-        return json_datas
-
-
-    def transform_stops(json_datas:dict) -> dict:
+    def transform_stops(df:pd.DataFrame) -> pd.DataFrame:
         """
         Transform the stops data.
         """
-
-        # Load json datas as a dataframe
-        df = pd.read_json(json_datas)
-
         # Remove unnecessary columns
         df.drop(columns=['stop_desc', 'zone_id', 'stop_url'], inplace=True)
 
-        # Convert the dataframe to a JSON string
-        json_datas = df.to_json(orient='records')
+        return df
 
-        return json_datas
-
-
-    def transform_stop_times(json_datas:dict) -> dict:
+    def transform_stop_times(df:pd.DataFrame) -> pd.DataFrame:
         """
         Transform the stop times data.
         """
-
-        # Load json datas as a dataframe
-        df = pd.read_json(json_datas)
-
         # Remove unnecessary columns
         df.drop(columns=['stop_headsign', 'shape_dist_traveled'], inplace=True)
 
-        # Convert the dataframe to a JSON string
-        json_datas = df.to_json(orient='records')
+        return df
 
-        return json_datas
-
-
-    def transform_trips(json_datas:dict) -> dict:
+    def transform_trips(df:pd.DataFrame) -> pd.DataFrame:
         """
         Transform the trips data.
         """
-
-        # Load json datas as a dataframe
-        df = pd.read_json(json_datas)
-
         # Remove unnecessary columns
         df.drop(columns=['shape_id'], inplace=True)
 
-        # Convert the dataframe to a JSON string
-        json_datas = df.to_json(orient='records')
-
-        return json_datas
-
-
+        return df
 
     # Function logic
+    task_instance = kwargs.get('task_instance')
+    if not task_instance:
+        raise ValueError("task_instance is required in kwargs")
 
-    task_instance = kwargs['task_instance']
+    file = kwargs.get('file')
+    if not file:
+        raise ValueError("file is required in kwargs")
 
-
-    # Transform the data depending on the file
-    if kwargs['file'] == 'agency':
-        # Agency data not needed
-        pass
-
-    elif kwargs['file'] == 'calendar_dates':
-        logging.info(f"Transforming calendar_dates data")
-        # Retrieve the XCom value
-        json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
-        # Transform the data
-        transformed_data = transform_calendar_dates(json_datas)
-        logging.info(f"Calendar_dates data transformed")
-
-    elif kwargs['file'] == 'feed_info':
-        # Feed info data not needed
-        pass
-
-    elif kwargs['file'] == 'routes':
-        logging.info(f"Transforming routes data")
-        # Retrieve the XCom value
-        json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
-        # Transform the data
-        transformed_data = transform_routes(json_datas)
-        logging.info(f"Routes data transformed")
-
-    elif kwargs['file'] == 'stops':
-        logging.info(f"Transforming stops data")
-        # Retrieve the XCom value
-        json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
-        # Transform the data
-        transformed_data = transform_stops(json_datas)
-        logging.info(f"Stops data transformed")
-
-    elif kwargs['file'] == 'stop_times':
-        logging.info(f"Transforming stop_times data")
-        # Retrieve the XCom value
-        json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
-        # Transform the data
-        transformed_data = transform_stop_times(json_datas)
-        logging.info(f"Stop_times data transformed")
-
-    elif kwargs['file'] == 'transfers':
-        # Transfers data not needed
-        pass
-
-    elif kwargs['file'] == 'trips':
-        logging.info(f"Transforming trips data")
-        # Retrieve the XCom value
-        json_datas = task_instance.xcom_pull(task_ids=f"load_{kwargs['file']}")
-        # Transform the data
-        transformed_data = transform_trips(json_datas)
+    transform_functions = {
+        'calendar_dates': transform_calendar_dates,
+        'routes': transform_routes,
+        'stops': transform_stops,
+        'stop_times': transform_stop_times,
+        'trips': transform_trips,
+    }
 
 
-    return transformed_data
+    if file not in transform_functions:
+        logging.warning(f"No transformation function for file: {file}.txt")
+        return []
+
+
+    logging.info(f"Transforming {file} data")
+
+    # Retrieve the XCom value and transform the data
+    json_datas = task_instance.xcom_pull(task_ids=f"load_{file}.txt")
+    # Load as DF
+    df_json_datas = load_json_as_df(json_datas)
+    # Transform Data
+    transformed_data = transform_functions[file](df_json_datas)
+    # Revserse DF to JSON
+    transformed_data_json = reverse_json_to_df(transformed_data)
+    logging.info(f"{file} data transformed")
+
+    return transformed_data_json
 
 
 
@@ -260,72 +208,42 @@ def ingest_gtfs_data_to_database(**kwargs) -> None:
     """
     
     """
+    task_instance = kwargs.get('task_instance')
+    if not task_instance:
+        raise ValueError("task_instance is required in kwargs")
 
-    # Queries
-    queries = {routes: ""}
-
-
-
-    """
-    INSERT INTO routes (route_id, route_short_name, route_long_name, route_type, route_name)
-    VALUES (%s, %s, %s, %s, %s)
-    ON CONFLICT (route_id)
-    DO UPDATE SET
-    route_short_name = EXCLUDED.route_short_name,
-    route_long_name = EXCLUDED.route_long_name,
-    route_type = EXCLUDED.route_type,
-    route_name = EXCLUDED.route_name
-    """, 
-    (
-    row["route_id"],
-    row["route_short_name"],
-    row["route_long_name"],
-    row["route_type"],
-    row["route_name"])
+    file = kwargs.get('file')
+    if not file:
+        raise ValueError("file is required in kwargs")
 
 
-
-            
-    # Retrieve the XCom value
-    task_instance = kwargs['task_instance']
-    data_to_ingest = task_instance.xcom_pull(task_ids=f"transform_{kwargs['file']}")
-
-
-    # Initialize the connection and cursor
-    conn = None
-    cursor = None
+    # Retrieve the XCom value and transform the data
+    transformed_data_json = task_instance.xcom_pull(task_ids=f"transform_{kwargs['file']}")
+    if not transformed_data_json:
+        raise ValueError(f"No data found for task_id transform_{file}")
 
 
-    # Push data to the database
+    #transformed_data_json = json.loads(transformed_data_json) # TEST SI ERREUR
+
+
+    # Get the query and the corresponding data
+    query, data_template = queries.get(file)
+    if not query or not data_template:
+        raise ValueError(f"No query found for file {file}")
+
+
+    # Connect to the database
+    conn = connect_to_postgres()
+    cursor = conn.cursor()
+
+    # Push the data to the database
     try:
-        # Connect to the database
-        conn = connect_to_postgres()
-        cursor = conn.cursor()
-    # Raise an error if the connection fails
-    except psycopg2.DatabaseError as e:
-        logging.error(f"Database error: {e}")
-        raise ValueError(f"Failed to push data to PostgreSQL: {e}")
-
-    # Raise an error if an unexpected error occurs
-    except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        raise ValueError(f"An unexpected error occurred: {e}")
-
-
-    else:
-        if kwargs['filename'] == "routes":
-            for row in data_to_ingest:
-                cursor.execute(query[filename], row)
-        else:
-            pass
-        
-
-        # Commit the transaction
+        for row in transformed_data_json:
+            data = tuple(row[key] for key in data_template)
+            cursor.execute(query, data)
         conn.commit()
-    
-    # Close the cursor and connection
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()

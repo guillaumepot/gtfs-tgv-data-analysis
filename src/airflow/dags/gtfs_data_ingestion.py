@@ -14,7 +14,7 @@ import datetime
 import os
 
 # Task functions
-from gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_to_dataframe, data_transformer, ingest_gtfs_data_to_database
+from gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_from_file, data_cleaner, ingest_gtfs_data_to_database
 from common_functions import clear_raw_files
 
 
@@ -71,6 +71,7 @@ get_gtfs_files = PythonOperator(
     )
 
 
+
 # Start parrallel tasks for each file
 file_sensors = []
 df_loaders = []
@@ -98,7 +99,7 @@ for file_name in expected_files:
     df_loader = PythonOperator(
         task_id=f'load_{file_name}',
         dag=gtfs_ingestion_dag,
-        python_callable=load_gtfs_data_to_dataframe,
+        python_callable=load_gtfs_data_from_file,
         op_kwargs={'filepath': gtfs_storage_path + file_name},
         retries=1,
         retry_delay=datetime.timedelta(seconds=90),
@@ -112,18 +113,20 @@ for file_name in expected_files:
     df_loaders.append(df_loader)
 
 
-    file_base_name = file_name.split('.')[0]  # Remove .txt extension
 
-                                ######################################################" CONTINUE FROM HERE"
+    # Remove .txt extension; this will be used as the base name for the file
+    file_base_name = file_name.split('.')[0]  
+
+
     # Transform datas
     data_transformer = PythonOperator(
         task_id=f'transform_{file_base_name}',
         dag=gtfs_ingestion_dag,
-        python_callable=data_transformer,
+        python_callable=data_cleaner,
         provide_context=True,
         op_kwargs={'file': file_base_name},
         retries=1,
-        retry_delay=datetime.timedelta(seconds=90),
+        retry_delay=datetime.timedelta(seconds=30),
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='none_failed',
@@ -134,15 +137,13 @@ for file_name in expected_files:
     data_transformers.append(data_transformer)
 
 
-
-
     # Ingest data into the database
-    data_ingestion_task = PythonOperator(
+    data_ingestion= PythonOperator(
         task_id=f'ingest_{file_base_name}',
         dag=gtfs_ingestion_dag,
         python_callable=ingest_gtfs_data_to_database,
         provide_context=True,
-        op_kwargs={'filename': file_base_name},
+        op_kwargs={'file': file_base_name},
         retries=3,
         retry_delay=datetime.timedelta(seconds=120),
         on_failure_callback=None,
@@ -152,7 +153,7 @@ for file_name in expected_files:
         # WIP
         """
     )
-    data_ingesters.append(data_ingestion_task)
+    data_ingesters.append(data_ingestion)
 
 
 
@@ -175,12 +176,10 @@ clear_raw_files = PythonOperator(
 
 
 
-
-
 # DEPENDENCIES
 get_gtfs_files >> file_sensors
 
-for file_sensor, df_loader, data_transformer, data_ingestion_task in zip(file_sensors, df_loaders, data_transformers, data_ingesters):
-    file_sensor >> df_loader >> data_transformer >> data_ingestion_task
+for file_sensor, df_loader, data_transformer, data_ingestion in zip(file_sensors, df_loaders, data_transformers, data_ingesters):
+    file_sensor >> df_loader >> data_transformer >> data_ingestion
 
 data_ingesters >> clear_raw_files

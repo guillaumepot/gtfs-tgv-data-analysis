@@ -20,38 +20,49 @@ CREATE TABLE IF NOT EXISTS trips_gtfs_rt (
 
 
 -- GTFS tables
-CREATE TABLE IF NOT EXISTS routes_gtfs (
+CREATE TABLE IF NOT EXISTS calendar_dates (
+  id SERIAL PRIMARY KEY,
+  service_id INT,
+  date DATE,
+  exception_type INT
+);
+
+
+CREATE TABLE IF NOT EXISTS routes (
   route_id VARCHAR PRIMARY KEY,
   route_short_name VARCHAR,
   route_long_name VARCHAR,
-  route_type INT,
-  route_name VARCHAR
+  route_type INT
 );
 
-CREATE TABLE IF NOT EXISTS stops_gtfs (
+
+CREATE TABLE IF NOT EXISTS stops (
   stop_id VARCHAR PRIMARY KEY,
   stop_name VARCHAR,
   stop_lat FLOAT,
   stop_lon FLOAT,
-  location_type INT
+  location_type INT,
+  parent_station VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS stop_times_gtfs (
-  trip_id VARCHAR PRIMARY KEY,
+
+CREATE TABLE IF NOT EXISTS stop_times (
+  trip_id VARCHAR,
   arrival_time TIME,
   departure_time TIME,
   stop_id VARCHAR,
   stop_sequence INT,
   pickup_type INT,
   drop_off_type INT,
-  CONSTRAINT fk_stop_id FOREIGN KEY (stop_id) REFERENCES stops_gtfs(stop_id)
+  PRIMARY KEY (trip_id, stop_sequence)
 );
 
-CREATE TABLE IF NOT EXISTS trips_gtfs (
-  trip_headline INT PRIMARY KEY,
+
+CREATE TABLE IF NOT EXISTS trips (
   route_id VARCHAR,
-  trip_id VARCHAR,
+  service_id INT,
+  trip_id VARCHAR PRIMARY KEY,
+  trip_headsign INT,
   direction_id INT,
-  CONSTRAINT fk_route_id FOREIGN KEY (route_id) REFERENCES routes_gtfs(route_id),
-  CONSTRAINT fk_trip_id FOREIGN KEY (trip_id) REFERENCES stop_times_gtfs(trip_id)
+  block_id VARCHAR
 );
