@@ -189,7 +189,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 - Create functions for open data soruces
 - Add dag img in media
 
-
 0.0.4
 - Get next trains from a station script
 - Display a train informations script + Train itinary map | Station & train routes graph
