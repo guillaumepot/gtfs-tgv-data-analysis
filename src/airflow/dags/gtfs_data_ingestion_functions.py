@@ -4,6 +4,7 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
+#from airflow.models import TaskInstance
 import json
 import logging
 import os
@@ -131,10 +132,12 @@ def data_cleaner(**kwargs) -> list:
 
         return df
 
-    def transform_calendar_dates(df:pd.DataFrame) -> pd.DataFrame:
+    def transform_calendar_dates(df: pd.DataFrame) -> pd.DataFrame:
         """
         Transform the calendar dates data.
         """
+        # Ensure the date column is in the correct format
+        df['date'] = pd.to_datetime(df['date'], format='%Y%m%d').dt.date
         return df
 
     def transform_stops(df:pd.DataFrame) -> pd.DataFrame:
@@ -146,12 +149,21 @@ def data_cleaner(**kwargs) -> list:
 
         return df
 
-    def transform_stop_times(df:pd.DataFrame) -> pd.DataFrame:
+    def transform_stop_times(df: pd.DataFrame) -> pd.DataFrame:
         """
         Transform the stop times data.
         """
         # Remove unnecessary columns
         df.drop(columns=['stop_headsign', 'shape_dist_traveled'], inplace=True)
+
+        # Ensure the time columns are in the correct format
+        def correct_time_format(time_str):
+            h, m, s = map(int, time_str.split(':'))
+            h = h % 24  # Correct hours to be within 0-23
+            return f"{h:02}:{m:02}:{s:02}"
+
+        df['arrival_time'] = df['arrival_time'].apply(correct_time_format)
+        df['departure_time'] = df['departure_time'].apply(correct_time_format)
 
         return df
 
@@ -205,19 +217,8 @@ def data_cleaner(**kwargs) -> list:
 
 def ingest_gtfs_data_to_database(**kwargs) -> None:
     """
-    Ingests GTFS data into the database.
-    Args:
-        **kwargs: Keyword arguments containing the following parameters:
-            - task_instance (TaskInstance): The task instance.
-            - file (str): The file name.
-    Raises:
-        ValueError: If task_instance or file is not provided.
-        ValueError: If no data is found for the corresponding task_id.
-        ValueError: If no query or data template is found for the given file.
-    Returns:
-        None
+    
     """
-
     task_instance = kwargs.get('task_instance')
     if not task_instance:
         raise ValueError("task_instance is required in kwargs")
