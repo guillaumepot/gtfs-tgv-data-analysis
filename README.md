@@ -175,6 +175,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ### Changelogs
 
+[v0.0.3](./changelogs/0.0.3.md)
 [v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
 
@@ -183,10 +184,11 @@ GTFS is supported around the world and its use, importance, and scope has been i
 ### Roadmap
 
 ```
-
-- Dag to ingest GTFS (not RT) datas in the PG database
-- ETL pipeline to upgrade GTFS data structure
 - BI board for data analysis
+- Station & train routes graph
+- Train itinary map
+- Get next trains from a station script
+- Display a train informations script
 - Train delay prediction (classification)
 - Train time delay prediction (regression)
 
@@ -210,8 +212,19 @@ The schemas below display dags Airflow executes to fetch datas.
 
 
 <b> GTFS RT Ingestion Dag </b>
-- Schedule: Every 5 minutes 24/7
-<img src="./media/GTFS _RT_ingestion_dag.png">
+- Schedule: Every hour from 05:00am to 11:30pm, every day
+<img src="./media/GTFS_RT_ingestion_dag.png">
+
+
+<b> GTFS Ingestion Dag </b>
+- Schedule: Once a day, at 10:00pm
+<img src="./media/GTFS_ingestion_dag.png">
+
+
+Xcom remover dag is used to clean all Xcoms, it is triggered every day at 03:00am
+<b> Xcom Remover </b>
+<img src="./media/Xcom_remover_dag.png">
+
 
 
 ### PostGres
@@ -233,6 +246,9 @@ GTFS datas are updated once a day.
 
 ### Data sources
 
+GTFS & GTFS RT
+https://ressources.data.sncf.com/explore/dataset/horaires-des-train-voyages-tgvinouiouigo/information/
+
 Train stations:
 https://ressources.data.sncf.com/explore/dataset/gares-de-voyageurs/information/?disjunctive.segment_drg
 
@@ -244,9 +260,6 @@ https://ressources.data.sncf.com/explore/dataset/reglarite-mensuelle-tgv-nationa
 
 TGV by route ponctuality:
 https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/information/
-
-GTFS:
-https://ressources.data.sncf.com/explore/dataset/horaires-des-train-voyages-tgvinouiouigo/information/
 
 Traffic informations:
 https://www.sncf-voyageurs.com/fr/voyagez-avec-nous/horaires-et-itineraires/
