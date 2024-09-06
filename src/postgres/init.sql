@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS calendar_dates (
   id SERIAL PRIMARY KEY,
   service_id INT,
   date DATE,
-  exception_type INT
+  exception_type INT,
+  CONSTRAINT unique_service_date UNIQUE (service_id, date)
 );
 
 
