@@ -9,9 +9,12 @@ import os
 import psycopg2
 
 
+# VARS
+source_file_path = "./sources.json"
+
 
 # COMMON FUNCTIONS
-def load_url(filename:str, source_file: str = "sources.json") -> str:
+def load_url(filename:str, source_file: str = source_file_path) -> str:
     """
     Load the URL corresponding to the given filename from the source file.
     Parameters:
@@ -21,12 +24,16 @@ def load_url(filename:str, source_file: str = "sources.json") -> str:
     - str: The URL corresponding to the given filename.
     """
 
-    # Get URL
-    with open(source_file, 'r') as source_file:
-        sources = json.load(source_file)
+    try:
+        with open(source_file, 'r') as file:
+            sources = json.load(file)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The source file {source_file} was not found.")
+    except json.JSONDecodeError:
+        raise ValueError(f"The source file {source_file} is not a valid JSON file.")
 
-    return sources[filename]
-
+    if filename not in sources:
+        raise KeyError(f"The filename {filename} was not found in the source file.")
 
 
 def connect_to_postgres() -> psycopg2.connect:

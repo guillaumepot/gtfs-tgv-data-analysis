@@ -185,7 +185,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ```
 0.0.3
-- Create functions for open data sources
+- Create functions for ETL get open data sources
 - Add dag img in media
 
 0.0.4

@@ -62,6 +62,7 @@ for file_name in expected_files:
         dag = ETL_get_files_from_open_data,
         python_callable = download_file_from_url,
         op_kwargs = {'url': load_url(file_name),
+                     'filename': file_name,
                      'storage_path': raw_files_storage_path},
         retries = 3,
         retry_delay = datetime.timedelta(seconds=120),
