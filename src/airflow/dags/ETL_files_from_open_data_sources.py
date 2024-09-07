@@ -41,8 +41,10 @@ ETL_get_files_from_open_data = DAG(
     schedule_interval =  dag_scheduler,
     start_date = days_ago(1),
     doc_md = """
-    # WIP
-            """)
+    # ETL_get_files_from_open_data
+    This DAG is responsible for downloading files from SNCF open data, processing them, and storing them in the designated storage.
+    """
+)
 
 
 
@@ -66,8 +68,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='dummy',
-        doc_md = """
-        # WIP
+        doc_md = f"""
+        # Download {file_name}
+        This task downloads the file {file_name} from the specified URL and stores it in the raw files storage path.
         """
         )
     file_downloaders.append(file_downloader)
@@ -83,7 +86,11 @@ for file_name in expected_files:
         poke_interval=60,
         timeout=180,
         mode='reschedule',
-        trigger_rule='all_success'
+        trigger_rule='all_success',
+        doc_md = f"""
+        # Check {file_name}
+        This task checks if the file {file_name} has been downloaded to the raw files storage path.
+        """
     )
     file_sensors.append(file_sensor)
 
@@ -100,8 +107,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='all_success',
-        doc_md = """
-        # WIP
+        doc_md = f"""
+        # Transform {file_name}
+        This task transforms the file {file_name} after it has been downloaded.
         """
         )
     file_transformers.append(file_transformer)
@@ -118,8 +126,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='all_success',
-        doc_md = """
-        # WIP
+        doc_md = f"""
+        # Save {file_name}
+        This task saves the transformed file {file_name} to the clean files storage path.
         """
         )
     file_savers.append(file_saver)
@@ -138,7 +147,8 @@ clear_raw_data_files = PythonOperator(
     on_success_callback=None,
     trigger_rule='all_done',
     doc_md = """
-    # WIP
+    # Clear Raw Data Files
+    This task clears the raw data files from the raw files storage path after all processing is complete.
     """
     )
 

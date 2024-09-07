@@ -24,7 +24,7 @@ This project covers Data engineering, Datascience & Mlops.
 
 ## Project Information
 
-- **Version**: 0.0.2
+- **Version**: 0.0.3
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
 
@@ -185,8 +185,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ```
 0.0.3
-- Unit tests functions (gtfs data ingestion + ETL files form open data sources + common functions)
-- Create functions for open data soruces
+- Create functions for open data sources
 - Add dag img in media
 
 0.0.4
