@@ -188,17 +188,17 @@ GTFS is supported around the world and its use, importance, and scope has been i
 - Create functions for ETL get open data sources
 - Add dag img in media
 
-0.0.4
+0.1.0
 - Get next trains from a station script
 - Display a train informations script + Train itinary map | Station & train routes graph
 
-0.0.5
+0.2.0
 - Station & lines graph (Neo4J DB)
 
-0.0.6
+0.3.0
 - BI board -> data analysis
 
-0.0.7
+1.1.0
 - Train delay prediction (classification)
 - Train time delay prediction (regression)
 ```
