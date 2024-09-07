@@ -13,10 +13,8 @@ import psycopg2
 import requests
 
 
-from common_functions import connect_to_postgres
+from .common_functions import connect_to_postgres
             
-
-
 
 
 # TASKS FUNCTIONS

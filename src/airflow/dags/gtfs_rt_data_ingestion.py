@@ -1,5 +1,5 @@
 """
-DAG GTFS Real-Time Ingestion
+This DAG is responsible for getting GTFS data from various sources, processing them, and storing them in a database.
 """
 
 

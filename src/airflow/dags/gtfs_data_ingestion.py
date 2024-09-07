@@ -1,5 +1,6 @@
 """
-DAG GTFS Ingestion
+
+This DAG is responsible for getting GTFS data from various sources, processing them, and storing them in a database.
 """
 
 
@@ -36,7 +37,6 @@ expected_files = [
 ]
 
 
-
 # DAG
 gtfs_ingestion_dag = DAG(
     dag_id = "gtfs_ingestion_dag",
@@ -46,13 +46,13 @@ gtfs_ingestion_dag = DAG(
     schedule_interval =  dag_scheduler,
     start_date = days_ago(1),
     doc_md = """
-    # WIP
-            """)
+    # GTFS Data Ingestion DAG
+    This DAG is responsible for downloading GTFS data from various sources, processing the data, and storing it in a database.
+    The DAG includes tasks for downloading files, checking their existence, loading them into dataframes, transforming the data, and ingesting it into the database.
+    """
+)
 
 
-
-
-### TASKS ###
 
 # Download files
 get_gtfs_files = PythonOperator(
@@ -67,13 +67,14 @@ get_gtfs_files = PythonOperator(
     on_success_callback=None,
     trigger_rule='dummy',
     doc_md = """
-    # WIP
+    # Download GTFS Files
+    This task downloads GTFS files from the specified URL and stores them in the designated storage path.
     """
     )
 
 
 
-# Start parrallel tasks for each file
+# Start parallel tasks for each file
 file_sensors = []
 df_loaders = []
 data_transformers = []
@@ -91,7 +92,11 @@ for file_name in expected_files:
         poke_interval=60,
         timeout=180,
         mode='reschedule',
-        trigger_rule='all_success'
+        trigger_rule='all_success',
+        doc_md=f"""
+        # Check File: {file_name}
+        This task checks if the file {file_name} has been downloaded to the storage path.
+        """
     )
     file_sensors.append(file_sensor)
 
@@ -107,8 +112,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='none_failed',
-        doc_md="""
-        # WIP
+        doc_md=f"""
+        # Load File: {file_name}
+        This task loads the file {file_name} into a dataframe for further processing.
         """
     )
     df_loaders.append(df_loader)
@@ -119,7 +125,7 @@ for file_name in expected_files:
     file_base_name = file_name.split('.')[0]  
 
 
-    # Transform datas
+    # Transform data
     data_transformer = PythonOperator(
         task_id=f'transform_{file_base_name}',
         dag=gtfs_ingestion_dag,
@@ -131,8 +137,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='none_failed',
-        doc_md="""
-        # WIP
+        doc_md=f"""
+        # Transform Data: {file_base_name}
+        This task transforms the data in the file {file_base_name} to prepare it for ingestion into the database.
         """
     )
     data_transformers.append(data_transformer)
@@ -150,8 +157,9 @@ for file_name in expected_files:
         on_failure_callback=None,
         on_success_callback=None,
         trigger_rule='all_success',
-        doc_md="""
-        # WIP
+        doc_md=f"""
+        # Ingest Data: {file_base_name}
+        This task ingests the transformed data from the file {file_base_name} into the database.
         """
     )
     data_ingesters.append(data_ingestion)

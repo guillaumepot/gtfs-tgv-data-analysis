@@ -13,8 +13,8 @@ import requests
 import zipfile
 
 
-from common_functions import connect_to_postgres
-from gtfs_queries import queries
+from .common_functions import connect_to_postgres
+from .gtfs_queries import queries
 
 
 # TASKS FUNCTIONS
@@ -218,7 +218,17 @@ def data_cleaner(**kwargs) -> list:
 
 def ingest_gtfs_data_to_database(**kwargs) -> None:
     """
-    
+    Ingests GTFS data into the database.
+    Args:
+        **kwargs: Keyword arguments containing the following parameters:
+            - task_instance (TaskInstance): The task instance object.
+            - file (str): The name of the file to ingest.
+    Raises:
+        ValueError: If task_instance or file is not provided in kwargs.
+        ValueError: If no data is found for the corresponding task_id.
+        ValueError: If no query or data template is found for the given file.
+    Returns:
+        None
     """
     task_instance = kwargs.get('task_instance')
     if not task_instance:

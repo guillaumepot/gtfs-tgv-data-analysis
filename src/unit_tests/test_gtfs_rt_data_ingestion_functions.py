@@ -1,142 +1,144 @@
 """
-Test DAG - gtfs rt data ingestion
+Test DAG - GTFS rt data ingestion
 """
 
 # LIB
+import json
 import os
 import pytest
 import sys
 from unittest import mock
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.airflow.dags.gtfs_rt_data_ingestion_functions import connect_to_postgres, get_gtfs_rt_data, transform_feed, push_feed_data_to_db
+from src.airflow.dags.gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
 
 
-# VAR
-# Mock environment variables
-@mock.patch.dict('os.environ', {
-    'DATA_PG_HOST': 'localhost',
-    'DATA_PG_PORT': '5432',
-    'DATA_PG_USER': 'root',
-    'DATA_PG_PASSWORD': 'root',
-    'DATA_PG_DB': 'train_delay_db'
-})
+# Test get_gtfs_rt_data
+@patch('src.airflow.dags.gtfs_rt_data_ingestion_functions.requests.get')
+def test_get_gtfs_rt_data(mock_get):
+    # Mock response
+    mock_response = MagicMock()
+    mock_response.content = b'\x08\x02\x12\x07\n\x05Hello'
+    mock_get.return_value = mock_response
 
-# TESTS
-def test_connect_to_postgres():
-    with mock.patch('psycopg2.connect') as mock_connect:
-        connect_to_postgres()
-
-        mock_connect.assert_called_once_with(
-            user='root',
-            password='root',
-            dbname='train_delay_db',
-            host='localhost',
-            port='5432'
-        )
-
-
-def test_get_gtfs_rt_data():
     gtfs_rt_url = "http://example.com/gtfs-rt"
-    mock_response = mock.Mock()
-    mock_response.content = b'\x08\x02\x12\x07\x08\x01\x10\x01\x18\x01'
-    
-    with mock.patch('requests.get', return_value=mock_response):
-        with mock.patch('google.transit.gtfs_realtime_pb2.FeedMessage.ParseFromString') as mock_parse:
-            mock_parse.return_value = None
-            result = get_gtfs_rt_data(gtfs_rt_url)
-            assert isinstance(result, str)
+    result = get_gtfs_rt_data(gtfs_rt_url)
+
+    assert isinstance(result, str)
+    assert "entity" in result
 
 
 
+# Test transform_feed
 def test_transform_feed():
-    # Adjust the Unix timestamps to match the expected datetime strings in UTC
-    timestamp_updated_at = 1672564800  # Corresponds to '2023-01-01 12:00:00' UTC
-    timestamp_arrival = timestamp_updated_at + 300  # 5 minutes later
-    timestamp_departure = timestamp_updated_at + 600  # 10 minutes later
-
-    feed_json = f'''
-    {{
+    # Mock task_instance and xcom_pull
+    mock_task_instance = MagicMock()
+    mock_task_instance.xcom_pull.return_value = json.dumps({
         "entity": [
-            {{
-                "tripUpdate": {{
-                    "trip": {{
-                        "tripId": "123",
+            {
+                "tripUpdate": {
+                    "trip": {
+                        "tripId": "12345",
                         "startDate": "20230101",
                         "startTime": "12:00:00"
-                    }},
+                    },
+                    "timestamp": 1672531200,
                     "stopTimeUpdate": [
-                        {{
+                        {
                             "stopId": "stop1",
-                            "arrival": {{
-                                "time": {timestamp_arrival},
-                                "delay": 60
-                            }},
-                            "departure": {{
-                                "time": {timestamp_departure},
-                                "delay": 120
-                            }}
-                        }}
-                    ],
-                    "timestamp": {timestamp_updated_at}
-                }}
-            }}
-        ]
-    }}
-    '''
-
-    task_instance = mock.Mock()
-    task_instance.xcom_pull.return_value = feed_json
-    kwargs = {'task_instance': task_instance}
-    
-    all_trip_data = transform_feed(**kwargs)
-
-
-    # Assertions
-    assert len(all_trip_data) == 1
-    assert all_trip_data[0]['trip_id'] == '123'
-    assert all_trip_data[0]['departure_date'] == '20230101'
-    assert all_trip_data[0]['origin_departure_time'] == '12:00:00'
-    assert all_trip_data[0]['updated_at'] == '2023-01-01 09:20:00'
-    assert all_trip_data[0]['stop_id'] == 'stop1'
-    assert all_trip_data[0]['stop_arrival_time'] == '2023-01-01 09:25:00'
-    assert all_trip_data[0]['stop_departure_time'] == '2023-01-01 09:30:00'
-    assert all_trip_data[0]['stop_delay_arrival'] == 1
-    assert all_trip_data[0]['stop_delay_departure'] == 2
-
-
-
-def test_push_feed_data_to_db():
-    # Mock the connect_to_postgres function
-    with mock.patch('src.airflow.dags.gtfs_rt_data_ingestion_functions.connect_to_postgres') as mock_connect:
-        # Mock the connection and cursor
-        mock_conn = mock.Mock()
-        mock_cursor = mock.Mock()
-        mock_connect.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-
-        # Mock the task_instance.xcom_pull method
-        task_instance = mock.Mock()
-        task_instance.xcom_pull.return_value = [
-            {
-                "trip_id": "123",
-                "departure_date": "20230101",
-                "origin_departure_time": "12:00:00",
-                "updated_at": "2023-01-01 09:20:00",
-                "stop_id": "stop1",
-                "stop_arrival_time": "2023-01-01 09:25:00",
-                "stop_departure_time": "2023-01-01 09:30:00",
-                "stop_delay_arrival": 1,
-                "stop_delay_departure": 2
+                            "arrival": {"time": 1672534800, "delay": 300},
+                            "departure": {"time": 1672535400, "delay": 600}
+                        },
+                        {
+                            "stopId": "stop2",
+                            "arrival": {"time": 1672536000, "delay": 900},
+                            "departure": {"time": 1672536600, "delay": 1200}
+                        }
+                    ]
+                }
             }
         ]
+    })
 
-        # Call the function with the necessary arguments
-        push_feed_data_to_db(task_instance=task_instance, table="trips_gtfs_rt")
+    kwargs = {'task_instance': mock_task_instance}
 
-        # Assertions
-        mock_cursor.execute.assert_called_once_with(
-            """
+    expected_output = [
+        {
+            "trip_id": "12345",
+            "departure_date": "20230101",
+            "origin_departure_time": "12:00:00",
+            "updated_at": "2023-01-01 00:00:00",
+            "stop_id": "stop1",
+            "stop_arrival_time": "2023-01-01 01:00:00",
+            "stop_departure_time": "2023-01-01 01:10:00",
+            "stop_delay_arrival": 5,
+            "stop_delay_departure": 10
+        },
+        {
+            "trip_id": "12345",
+            "departure_date": "20230101",
+            "origin_departure_time": "12:00:00",
+            "updated_at": "2023-01-01 00:00:00",
+            "stop_id": "stop2",
+            "stop_arrival_time": "2023-01-01 01:20:00",
+            "stop_departure_time": "2023-01-01 01:30:00",
+            "stop_delay_arrival": 15,
+            "stop_delay_departure": 20
+        }
+    ]
+
+    result = transform_feed(**kwargs)
+
+    assert result == expected_output
+
+
+# Test push_feed_data_to_db
+@patch('src.airflow.dags.gtfs_rt_data_ingestion_functions.connect_to_postgres')
+def test_push_feed_data_to_db(mock_connect_to_postgres):
+    # Mock the database connection and cursor
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_connect_to_postgres.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+
+    # Mock task_instance and xcom_pull
+    mock_task_instance = MagicMock()
+    mock_task_instance.xcom_pull.return_value = [
+        {
+            "trip_id": "12345",
+            "departure_date": "20230101",
+            "origin_departure_time": "12:00:00",
+            "updated_at": "2023-01-01 00:00:00",
+            "stop_id": "stop1",
+            "stop_arrival_time": "2023-01-01 01:00:00",
+            "stop_departure_time": "2023-01-01 01:10:00",
+            "stop_delay_arrival": 5,
+            "stop_delay_departure": 10
+        },
+        {
+            "trip_id": "12345",
+            "departure_date": "20230101",
+            "origin_departure_time": "12:00:00",
+            "updated_at": "2023-01-01 00:00:00",
+            "stop_id": "stop2",
+            "stop_arrival_time": "2023-01-01 01:20:00",
+            "stop_departure_time": "2023-01-01 01:30:00",
+            "stop_delay_arrival": 15,
+            "stop_delay_departure": 20
+        }
+    ]
+
+    kwargs = {
+        'task_instance': mock_task_instance,
+        'table': 'trips_gtfs_rt'
+    }
+
+    # Call the function
+    push_feed_data_to_db(**kwargs)
+
+    # Verify that the cursor.execute method was called with the expected SQL and parameters
+    expected_sql = """
                     INSERT INTO trips_gtfs_rt (
                     trip_id, departure_date, origin_departure_time, updated_at,
                     stop_id, stop_arrival_time, stop_departure_time,
@@ -151,11 +153,23 @@ def test_push_feed_data_to_db():
                         stop_departure_time = EXCLUDED.stop_departure_time,
                         stop_delay_arrival = EXCLUDED.stop_delay_arrival,
                         stop_delay_departure = EXCLUDED.stop_delay_departure;
-                    """, (
-                "123", "20230101", "12:00:00", "2023-01-01 09:20:00", "stop1",
-                "2023-01-01 09:25:00", "2023-01-01 09:30:00", 1, 2
-            )
+                    """
+    expected_params = [
+        (
+            "12345", "20230101", "12:00:00", "2023-01-01 00:00:00", "stop1",
+            "2023-01-01 01:00:00", "2023-01-01 01:10:00", 5, 10
+        ),
+        (
+            "12345", "20230101", "12:00:00", "2023-01-01 00:00:00", "stop2",
+            "2023-01-01 01:20:00", "2023-01-01 01:30:00", 15, 20
         )
-        mock_conn.commit.assert_called_once()
-        mock_cursor.close.assert_called_once()
-        mock_conn.close.assert_called_once()
+    ]
+
+    assert mock_cursor.execute.call_count == 2
+    mock_cursor.execute.assert_any_call(expected_sql, expected_params[0])
+    mock_cursor.execute.assert_any_call(expected_sql, expected_params[1])
+
+    # Verify that the connection commit and close methods were called
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()

@@ -2,7 +2,6 @@
 Contains common functions that are used by the tasks in the Airflow dags
 """
 
-
 # LIB
 import json
 import logging
@@ -27,8 +26,6 @@ def load_url(filename:str, source_file: str = "sources.json") -> str:
         sources = json.load(source_file)
 
     return sources[filename]
-
-
 
 
 
