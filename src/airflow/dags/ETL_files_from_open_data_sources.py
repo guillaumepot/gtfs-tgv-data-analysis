@@ -20,7 +20,7 @@ from common_functions import load_url, load_df_from_file, clear_raw_files
 # VARS
 dag_scheduler = os.getenv('ETL_OPEN_DATA_FILES_SCHEDULER', None)
 raw_files_storage_path = "/opt/airflow/storage/raw/"
-clean_files_storage_path = "/opt/airflow/storage/clean/"
+clean_files_storage_path = "/opt/airflow/storage/cleaned/"
 
 # Define the expected files the dag should download and process
 expected_files = [
@@ -167,7 +167,7 @@ clear_raw_data_files = PythonOperator(
     retry_delay = datetime.timedelta(seconds=30),
     on_failure_callback=None,
     on_success_callback=None,
-    trigger_rule='all_done',
+    trigger_rule='all_success',
     doc_md = """
     # Clear Raw Data Files
     This task clears the raw data files from the raw files storage path after all processing is complete.

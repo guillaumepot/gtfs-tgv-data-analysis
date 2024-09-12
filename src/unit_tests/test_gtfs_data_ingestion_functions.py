@@ -6,12 +6,9 @@ Test DAG - GTFS data ingestion
 import os
 import pandas as pd
 import pytest
-import sys
 from unittest import mock
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from src.airflow.dags.gtfs_data_ingestion_functions import get_gtfs_files, data_cleaner, ingest_gtfs_data_to_database
-from src.airflow.dags.gtfs_queries import queries
 
 
 def test_get_gtfs_files():

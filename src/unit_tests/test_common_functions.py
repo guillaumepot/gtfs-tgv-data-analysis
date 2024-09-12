@@ -1,3 +1,4 @@
+# src/unit_tests/test_common_functions.py
 """
 Test DAG - Common functions
 """
@@ -7,10 +8,8 @@ import json
 import os
 import pandas as pd
 import pytest
-import sys
 from unittest import mock
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.airflow.dags.common_functions import load_url, load_df_from_file, connect_to_postgres, clear_raw_files, load_json_as_df, reverse_json_to_df
 

@@ -4,15 +4,11 @@ Test DAG - GTFS rt data ingestion
 
 # LIB
 import json
-import os
 import pytest
-import sys
 from unittest import mock
 from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from src.airflow.dags.gtfs_rt_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
-
 
 # Test get_gtfs_rt_data
 @patch('src.airflow.dags.gtfs_rt_data_ingestion_functions.requests.get')
