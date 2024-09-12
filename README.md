@@ -18,7 +18,7 @@ This project covers Data engineering, Datascience & Mlops.
 
 
 - Get & update (every hours) GTFS Real Time datas, add these datas to a postgres Database.
-
+- Get & update analytics files from open data, store them in a storage as csv files.
 
 
 
@@ -29,7 +29,6 @@ This project covers Data engineering, Datascience & Mlops.
 - **Author**: Guillaume Pot
 
 [![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/062guillaumepot/)
-
 
 
 
@@ -77,9 +76,84 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 ## Installation
 
-- Create a postgres_data folder to store Postgres data
-- Create a storage folder to store datas and update path in airflow .env file
+
+### Storage
+
+
+
+- Create a storage folder to store datas
     - Airflow volume needs these directories : raw | clean | gtfs
+You should have this tree:
+``` yaml
+-- storage
+|
+├── cleaned
+|   
+├── gtfs
+|
+└── raw
+```
+
+
+
+
+### Database
+
+- Create a postgres directory
+- Create a directory to store Postgres datas (eg: mkdir postgres_data) 
+- Copy init.sql
+- Copy docker-compose.yaml
+- Copy .env file & change postgres password
+
+You should have this tree:
+``` yaml
+-- postgres
+|
+├── postgres_data        # Contains db datas
+|   
+├── .env                 # env variables for containers
+|   
+├── docker-compose.yaml  # Docker compose file
+|
+└── init.sql             # Used to build tables in the DataBase
+
+```
+
+- Start postgres services
+
+
+
+### Airflow
+
+- Create an airflow directory
+- Create the following directories for airflow: config | dags | logs | plugins
+- Make sure these directories are non root owner
+- Copy docker-compose.yaml & change postgres variables (airlfow common vars)
+- Copy .env file & change postgres password + sotrage dir
+- Copy dag files in ./dags
+
+You should have this tree:
+``` yaml
+-- airflow
+|
+├── config               # config
+|   
+├── dags                 # dags
+|   
+├── logs                 # logs
+|   
+├── plugins              # plugins
+|   
+├── .env                 # env variables for containers
+|
+└── docker-compose.yaml  # Docker compose file
+
+```
+
+- Start airflow services:
+    - Run airflow-init to initialize airflow database (docker-compose -f docker-compose.yaml up airflow-init)
+    - Run airflow services
+
 
 
 
@@ -87,8 +161,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 - Docker
 -
-
-
 
 
 ## Repository
@@ -189,10 +261,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 ### Roadmap
 
 ```
-0.0.3
-- Create functions for ETL get open data sources
-- Add dag img in media
-
 0.1.0
 - Get next trains from a station script
 - Display a train informations script + Train itinary map | Station & train routes graph
@@ -225,24 +293,28 @@ The schemas below display dags Airflow executes to fetch datas.
 
 <b> GTFS RT Ingestion Dag </b>
 - Schedule: Every hour from 05:00am to 11:30pm, every day
+
 <img src="./media/GTFS_RT_ingestion_dag.png">
 
 
 <b> GTFS Ingestion Dag </b>
 - Schedule: Once a day, at 10:00pm
+
 <img src="./media/GTFS_ingestion_dag.png">
 
 
 
 <b> DAG ETL - Get open data files from source</b>
 - Schedule: First day of each month
+
 <img src="./media/ETL_open_data_files_from_source_dag.png">
 
 
 
 
-Xcom remover dag is used to clean all Xcoms, it is triggered every day at 03:00am
 <b> Xcom Remover </b>
+- Xcom remover dag is used to clean all Xcoms, it is triggered every day at 03:00am
+
 <img src="./media/Xcom_remover_dag.png">
 
 
