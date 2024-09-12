@@ -1,5 +1,6 @@
 apache-airflow
 gtfs-realtime-bindings
+pandas
 pytest
 psycopg2-binary
 requests
