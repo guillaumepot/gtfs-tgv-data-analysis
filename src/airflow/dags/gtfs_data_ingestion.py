@@ -14,8 +14,8 @@ import datetime
 import os
 
 # Task functions
-from gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_from_file, data_cleaner, ingest_gtfs_data_to_database
-from common_functions import clear_raw_files, load_url
+from gtfs_data_ingestion_functions import get_gtfs_files, data_cleaner, ingest_gtfs_data_to_database
+from common_functions import clear_raw_files, load_url, load_df_from_file
 
 
 # VARS
@@ -104,7 +104,7 @@ for file_name in expected_files:
     df_loader = PythonOperator(
         task_id=f'load_{file_name}',
         dag=gtfs_ingestion_dag,
-        python_callable=load_gtfs_data_from_file,
+        python_callable=load_df_from_file,
         op_kwargs={'filepath': gtfs_storage_path + file_name},
         retries=1,
         retry_delay=datetime.timedelta(seconds=90),

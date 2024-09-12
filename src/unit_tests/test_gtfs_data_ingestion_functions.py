@@ -3,7 +3,6 @@ Test DAG - GTFS data ingestion
 """
 
 # LIB
-import json
 import os
 import pandas as pd
 import pytest
@@ -11,8 +10,9 @@ import sys
 from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.airflow.dags.gtfs_data_ingestion_functions import get_gtfs_files, load_gtfs_data_from_file, data_cleaner, ingest_gtfs_data_to_database
+from src.airflow.dags.gtfs_data_ingestion_functions import get_gtfs_files, data_cleaner, ingest_gtfs_data_to_database
 from src.airflow.dags.gtfs_queries import queries
+
 
 def test_get_gtfs_files():
     gtfs_url = "http://example.com/gtfs.zip"
@@ -38,18 +38,6 @@ def test_get_gtfs_files():
                     mock_zip.assert_called_once_with(os.path.join(gtfs_storage_path, "export_gtfs_voyages.zip"), "r")
                     mock_remove.assert_called_once_with(os.path.join(gtfs_storage_path, "export_gtfs_voyages.zip"))
 
-
-
-def test_load_gtfs_data_from_file_file_not_found():
-    filepath = "/tmp/non_existent_file.csv"
-
-    # Mock os.path.exists
-    with mock.patch("os.path.exists", return_value=False) as mock_exists:
-        with pytest.raises(FileNotFoundError):
-            load_gtfs_data_from_file(filepath=filepath)
-
-            # Assertions
-            mock_exists.assert_called_once_with(filepath)
 
 
 def test_data_cleaner():
@@ -82,9 +70,13 @@ def test_data_cleaner():
             mock_to_json.assert_called_once_with(orient='records')
             assert result == expected_transformed_json
 
+
+
 def test_data_cleaner_missing_task_instance():
     with pytest.raises(ValueError, match="task_instance is required in kwargs"):
         data_cleaner(file="routes")
+
+
 
 def test_data_cleaner_missing_file():
     task_instance = mock.Mock()
@@ -92,9 +84,12 @@ def test_data_cleaner_missing_file():
         data_cleaner(task_instance=task_instance)
 
 
+
 def test_ingest_gtfs_data_to_database_missing_task_instance():
     with pytest.raises(ValueError, match="task_instance is required in kwargs"):
         ingest_gtfs_data_to_database(file="routes")
+
+
 
 def test_ingest_gtfs_data_to_database_missing_file():
     task_instance = mock.Mock()

@@ -6,11 +6,12 @@ Contains common functions that are used by the tasks in the Airflow dags
 import json
 import logging
 import os
+import pandas as pd
 import psycopg2
 
 
 # VARS
-source_file_path = "./sources.json"
+source_file_path = os.path.join(os.path.dirname(__file__), 'sources.json')
 
 
 # COMMON FUNCTIONS
@@ -35,6 +36,35 @@ def load_url(filename:str, source_file: str = source_file_path) -> str:
     if filename not in sources:
         raise KeyError(f"The filename {filename} was not found in the source file.")
 
+    return sources[filename]
+
+
+
+def load_df_from_file(**kwargs) -> dict:
+    """
+    Load GTFS data from a file into a pandas DataFrame and convert it to a JSON string.
+    Args:
+        **kwargs: Keyword arguments containing the following:
+            - filepath (str): The path to the GTFS data file.
+    Returns:
+        dict: The GTFS data loaded into a DataFrame and converted to a JSON string.
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        Exception: If the specified file is not supported or does not exist.
+    """
+    # Check if the file exists
+    filepath = kwargs.get('filepath')
+    if not filepath or not os.path.exists(filepath):
+        raise FileNotFoundError(f"File {filepath} not found")
+
+    # Load the file into a dataframe
+    df = pd.read_csv(filepath)
+    logging.info(f"Dataframe loaded, shape: {df.shape}")
+
+    # Convert the dataframe to a JSON string
+    return df.to_json(orient='records')
+
+
 
 def connect_to_postgres() -> psycopg2.connect:
     """
@@ -49,7 +79,7 @@ def connect_to_postgres() -> psycopg2.connect:
                             dbname=os.getenv("DATA_PG_DB"),
                             host=os.getenv("DATA_PG_HOST"),
                             port=os.getenv("DATA_PG_PORT"))
-            
+
 
 
 def clear_raw_files(storage_path: str) -> None:
@@ -67,3 +97,21 @@ def clear_raw_files(storage_path: str) -> None:
     except Exception as e:
         raise e
     
+
+
+def load_json_as_df(json_datas:dict) -> pd.DataFrame:
+    """
+    Load a JSON string as a pandas DataFrame.
+    Args:
+        json_datas (dict): The JSON string to load.
+    Returns:
+        pd.DataFrame: The JSON data loaded into a DataFrame.
+    """
+    json_str = json.dumps(json_datas)
+    return pd.read_json(json_str)
+
+def reverse_json_to_df(df:pd.DataFrame) -> dict:
+    """
+    Reverse the JSON string to a pandas DataFrame.
+    """
+    return df.to_json(orient='records')

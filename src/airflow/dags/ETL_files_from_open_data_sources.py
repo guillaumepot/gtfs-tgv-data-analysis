@@ -14,7 +14,7 @@ import os
 
 # Task functions
 from ETL_files_from_open_data_sources_functions import download_file_from_url, transform_file, save_file
-from common_functions import load_url, clear_raw_files
+from common_functions import load_url, load_df_from_file, clear_raw_files
 
 
 # VARS
@@ -51,6 +51,7 @@ ETL_get_files_from_open_data = DAG(
 ### TASKS ###
 file_downloaders = []
 file_sensors = []
+file_loaders = []
 file_transformers = []
 file_savers = []
 
@@ -94,6 +95,26 @@ for file_name in expected_files:
         """
     )
     file_sensors.append(file_sensor)
+
+
+
+    # Load the files into DF
+    file_loader = PythonOperator(
+        task_id=f'load_{file_name}',
+        dag=ETL_get_files_from_open_data,
+        python_callable=load_df_from_file,
+        op_kwargs={'filepath': raw_files_storage_path + file_name},
+        retries=1,
+        retry_delay=datetime.timedelta(seconds=90),
+        on_failure_callback=None,
+        on_success_callback=None,
+        trigger_rule='none_failed',
+        doc_md=f"""
+        # Load File: {file_name}
+        This task loads the file {file_name} into a dataframe for further processing.
+        """
+    )
+    file_loaders.append(file_loader)
 
 
     
@@ -156,7 +177,7 @@ clear_raw_data_files = PythonOperator(
 
 
 # DEPENDENCIES
-for file_downloader, file_sensor, file_transformer, file_saver in zip(file_downloaders, file_sensors, file_transformers, file_savers):
-    file_downloader >> file_sensor >> file_transformer >> file_saver
+for file_downloader, file_sensor, file_loader, file_transformer, file_saver in zip(file_downloaders, file_sensors, file_loaders, file_transformers, file_savers):
+    file_downloader >> file_sensor >> file_loader >> file_transformer >> file_saver
 
 file_savers >> clear_raw_data_files

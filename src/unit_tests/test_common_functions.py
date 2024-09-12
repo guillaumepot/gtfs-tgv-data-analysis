@@ -3,15 +3,16 @@ Test DAG - Common functions
 """
 
 # LIB
+import json
 import os
+import pandas as pd
 import pytest
 import sys
-import json
 from unittest import mock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from src.airflow.dags.common_functions import load_url, connect_to_postgres, clear_raw_files
+from src.airflow.dags.common_functions import load_url, load_df_from_file, connect_to_postgres, clear_raw_files, load_json_as_df, reverse_json_to_df
 
 
 
@@ -26,6 +27,19 @@ def test_load_url():
         assert load_url("file2") == "http://example.com/file2"
         with pytest.raises(KeyError):
             load_url("file3")
+
+# Test load_df_from_file function
+def test_load_df_from_file_file_not_found():
+    filepath = "/tmp/non_existent_file.csv"
+
+    # Mock os.path.exists
+    with mock.patch("os.path.exists", return_value=False) as mock_exists:
+        with pytest.raises(FileNotFoundError):
+            load_df_from_file(filepath=filepath)
+
+            # Assertions
+            mock_exists.assert_called_once_with(filepath)
+
 
 
 # Test connect_to_postgres function
@@ -48,6 +62,7 @@ def test_connect_to_postgres(mock_connect):
     )
 
 
+
 # Test clear_raw_files function
 @mock.patch("os.listdir")
 @mock.patch("os.path.isfile")
@@ -62,3 +77,28 @@ def test_clear_raw_files(mock_remove, mock_isfile, mock_listdir):
     mock_remove.assert_any_call("/mock/path/file2")
     mock_remove.assert_any_call("/mock/path/file3")
     assert mock_remove.call_count == 3
+
+
+
+# Test load_json_as_df function
+def test_load_json_as_df():
+    json_data = {
+        "name": ["Alice", "Bob"],
+        "age": [25, 30]
+    }
+    df = load_json_as_df(json_data)
+    expected_df = pd.DataFrame(json_data)
+    pd.testing.assert_frame_equal(df, expected_df)
+
+
+
+# Test reverse_json_to_df function
+def test_reverse_json_to_df():
+    data = {
+        "name": ["Alice", "Bob"],
+        "age": [25, 30]
+    }
+    df = pd.DataFrame(data)
+    json_data = reverse_json_to_df(df)
+    expected_json_data = df.to_json(orient='records')
+    assert json_data == expected_json_data
