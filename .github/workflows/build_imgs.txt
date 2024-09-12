@@ -1,6 +1,0 @@
-
-
-<!-- 
-# Build image
-docker build -t airflow_train_delay:latest .
--->
