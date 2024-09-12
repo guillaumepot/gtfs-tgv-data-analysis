@@ -83,7 +83,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 
 
-
 ### Requirements
 
 - Docker
@@ -106,6 +105,8 @@ GTFS is supported around the world and its use, importance, and scope has been i
 |              |
 |              └── start_unit_test.yaml           # Workflow to start Unit Tests
 |
+├── build              # Build versions | Used to compile files
+|
 ├── changelogs         # Changelogs files which contains changes for each new version 
 |
 ├── media              # General directory, contains images & schemas for the repository
@@ -114,27 +115,29 @@ GTFS is supported around the world and its use, importance, and scope has been i
 |
 ├── src                # Contains 'modules' used to run the app
 |    |
-|    ├── airflow                                          # Airflow files
+|    ├── airflow                                                     # Airflow files
 |    |      |
-|    |      ├── config                                    # Config files
+|    |      ├── config                                               # Config files
 |    |      |
-|    |      ├── dags                                      # Dags directory
+|    |      ├── dags                                                 # Dags directory
 |    |      |    |
-|    |      |    ├── gtfs_data_ingestion.py               # DAG
+|    |      |    ├── common_functions.py                             # Functions for DAG
 |    |      |    |
-|    |      |    ├── gtfs_data_ingestion_functions.py     # Functions for DAG
+|    |      |    ├── ETL_files_froms_open_data_sources_functions.py  # Functions for DAG
+|    |      |    |  
+|    |      |    ├── ETL_files_froms_open_data_sources.py            # DAG
 |    |      |    |
-|    |      |    ├── gtfs_rt_data_ingestion.py            # DAG
+|    |      |    ├── gtfs_data_ingestion_functions.py                # Functions for DAG
 |    |      |    |
-|    |      |    ├── gtfs_rt_data_ingestion_functions.py  # Functions for DAG
+|    |      |    ├── gtfs_data_ingestion.py                          # DAG
 |    |      |    |
-|    |      |    ├──
+|    |      |    ├── gtfs_queries.py                                 # Queries dictionary used to ingest data in PGDB
 |    |      |    |
-|    |      |    ├──
+|    |      |    ├── gtfs_rt_data_ingestion_functions.py             # Functions for DAG
 |    |      |    |
-|    |      |    ├──
+|    |      |    ├── gtfs_rt_data_ingestion.py                       # DAG
 |    |      |    |
-|    |      |    └──
+|    |      |    └── remove_xcoms.py                                 # DAG
 |    |      |
 |    |      ├── logs                                      # Logs
 |    |      |
@@ -207,9 +210,7 @@ GTFS is supported around the world and its use, importance, and scope has been i
 ### Contributions
 
 ```
-
 -
-
 ```
 
 
@@ -241,10 +242,6 @@ The schemas below display dags Airflow executes to fetch datas.
 Xcom remover dag is used to clean all Xcoms, it is triggered every day at 03:00am
 <b> Xcom Remover </b>
 <img src="./media/Xcom_remover_dag.png">
-
-
-
-
 
 
 
