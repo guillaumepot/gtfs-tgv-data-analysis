@@ -4,15 +4,14 @@ Contains functions that are used by the tasks in the Airflow dags
 
 
 # LIB
-from datetime import datetime, timezone
 import json
 import logging
 import os
 import pandas as pd
-import psycopg2
 import requests
 
 from .common_functions import load_json_as_df, reverse_json_to_df
+
 
 # TASK FUNCTIONS
 def download_file_from_url(url:str, filename:str, storage_path:str) -> None:
@@ -43,36 +42,45 @@ def download_file_from_url(url:str, filename:str, storage_path:str) -> None:
 
 def transform_file(**kwargs) -> dict:
     """
-    
+    Transform the data based on the given file.
+    Parameters:
+    - kwargs (dict): Keyword arguments containing 'task_instance' and 'file'.
+    Returns:
+    - dict: Transformed data in JSON format.
+    Raises:
+    - ValueError: If 'task_instance' or 'file' is not provided in kwargs.
     """
 
     # File dedicated functions
-    def transform_gares_de_voyageurs(df:pd.dataFrame) -> pd.dataFrame:
+    def transform_gares_de_voyageurs(df:pd.DataFrame) -> pd.DataFrame:
         """
-        
+        Nothing to change
         """
-        pass
+        return df
 
 
-    def transform_occupation_gares(df:pd.dataFrame) -> pd.dataFrame:
+    def transform_occupation_gares(df:pd.DataFrame) -> pd.DataFrame:
         """
-        
+        Nothing to change        
         """
-        pass
+        return df
 
 
-    def transform_ponctualite_globale_tgv(df:pd.dataFrame) -> pd.dataFrame:
+    def transform_ponctualite_globale_tgv(df:pd.DataFrame) -> pd.DataFrame:
         """
-        
+        Nothing to change
         """
-        pass
+        return df
 
 
-    def transform_ponctualite_tgv_par_route(df:pd.dataFrame) -> pd.dataFrame:
+    def transform_ponctualite_tgv_par_route(df:pd.DataFrame) -> pd.DataFrame:
         """
-        
+        Drop unnecessary columns (comments)    
         """
-        pass
+        # Drop unnecessary columns
+        df.drop(columns=["Commentaire annulations", "Commentaire retards au départ", "Commentaire retards à l'arrivée"], inplace=True)
+        return df
+
 
 
     # Function logic
@@ -114,34 +122,35 @@ def transform_file(**kwargs) -> dict:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def save_file(file:str) -> None:
+def save_file(**kwargs) -> None:
     """
-    
+    Save files to the specified storage path.
+    Args:
+        **kwargs: Additional keyword arguments.
+            task_instance (TaskInstance): The task instance.
+            storage_path (str): The storage path to save the files.
+    Raises:
+        ValueError: If task_instance is not provided in kwargs.
     """
-    pass
+
+    task_instance = kwargs.get('task_instance')
+    if not task_instance:
+        raise ValueError("task_instance is required in kwargs")
+
+    # Get storage path
+    clean_storage_path = kwargs.get('storage_path')
+
+    # Retrieve transformed data
+    logging.info("Retrieving transformed data")
+    gares_de_voyageurs, occupation_gares, ponctualite_globale_tgv, ponctualite_tgv_par_route = task_instance.xcom_pull(task_ids=[
+        'transform_gares_de_voyageurs.csv',
+        'transform_occupation_gares.csv',
+        'transform_ponctualite_globale_tgv.csv',
+        'transform_ponctualite_tgv_par_route.csv'
+    ])
+
+    # Save files
+    for file, data in zip(['gares_de_voyageurs.csv', 'occupation_gares.csv', 'ponctualite_globale_tgv.csv', 'ponctualite_tgv_par_route.csv'], [gares_de_voyageurs, occupation_gares, ponctualite_globale_tgv, ponctualite_tgv_par_route]):
+        with open(os.path.join(clean_storage_path, file), 'w') as f:
+            json.dump(data, f)
+        logging.info(f"{file} data saved in {clean_storage_path}")

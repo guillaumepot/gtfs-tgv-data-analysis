@@ -142,7 +142,7 @@ for file_name in expected_files:
         task_id = f'save_{file_name}',
         dag = ETL_get_files_from_open_data,
         python_callable = save_file,
-        op_kwargs = {'storage_path': clean_files_storage_path},
+        op_kwargs = {'clean_storage_path': clean_files_storage_path},
         retries = 1,
         retry_delay = datetime.timedelta(seconds=30),
         on_failure_callback=None,
