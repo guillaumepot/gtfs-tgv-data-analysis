@@ -57,12 +57,13 @@ def load_df_from_file(**kwargs) -> dict:
     if not filepath or not os.path.exists(filepath):
         raise FileNotFoundError(f"File {filepath} not found")
 
-    # Load the file into a dataframe
-    df = pd.read_csv(filepath)
-    logging.info(f"Dataframe loaded, shape: {df.shape}")
-
-    # Convert the dataframe to a JSON string
-    return df.to_json(orient='records')
+    try:
+        # Load the file into a dataframe
+        df = pd.read_csv(filepath, on_bad_lines='skip')
+        logging.info(f"Dataframe loaded, shape: {df.shape}")
+    except pd.errors.ParserError as e:
+        logging.error(f"Error parsing CSV file: {e}")
+        raise Exception(f"Error parsing CSV file: {e}")
 
 
 
@@ -109,6 +110,8 @@ def load_json_as_df(json_datas:dict) -> pd.DataFrame:
     """
     json_str = json.dumps(json_datas)
     return pd.read_json(json_str)
+
+
 
 def reverse_json_to_df(df:pd.DataFrame) -> dict:
     """

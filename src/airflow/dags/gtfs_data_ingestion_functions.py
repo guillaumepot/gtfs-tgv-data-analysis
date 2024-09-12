@@ -13,8 +13,8 @@ import requests
 import zipfile
 
 
-from .common_functions import connect_to_postgres, load_json_as_df, reverse_json_to_df
-from .gtfs_queries import queries
+from common_functions import connect_to_postgres, load_json_as_df, reverse_json_to_df
+from gtfs_queries import queries
 
 
 # TASKS FUNCTIONS

@@ -10,7 +10,6 @@ from airflow.utils.dates import days_ago
 from airflow.utils.db import provide_session
 from airflow.operators.python_operator import PythonOperator
 
-
 import os
 
 

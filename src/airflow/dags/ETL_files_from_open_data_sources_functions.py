@@ -10,7 +10,7 @@ import os
 import pandas as pd
 import requests
 
-from .common_functions import load_json_as_df, reverse_json_to_df
+from common_functions import load_json_as_df, reverse_json_to_df
 
 
 # TASK FUNCTIONS
@@ -75,12 +75,9 @@ def transform_file(**kwargs) -> dict:
 
     def transform_ponctualite_tgv_par_route(df:pd.DataFrame) -> pd.DataFrame:
         """
-        Drop unnecessary columns (comments)    
+        Nothing to change
         """
-        # Drop unnecessary columns
-        df.drop(columns=["Commentaire annulations", "Commentaire retards au départ", "Commentaire retards à l'arrivée"], inplace=True)
         return df
-
 
 
     # Function logic
@@ -122,6 +119,8 @@ def transform_file(**kwargs) -> dict:
 
 
 
+
+
 def save_file(**kwargs) -> None:
     """
     Save files to the specified storage path.
@@ -138,19 +137,14 @@ def save_file(**kwargs) -> None:
         raise ValueError("task_instance is required in kwargs")
 
     # Get storage path
-    clean_storage_path = kwargs.get('storage_path')
+    clean_storage_path = kwargs.get('clean_storage_path')
 
     # Retrieve transformed data
     logging.info("Retrieving transformed data")
-    gares_de_voyageurs, occupation_gares, ponctualite_globale_tgv, ponctualite_tgv_par_route = task_instance.xcom_pull(task_ids=[
-        'transform_gares_de_voyageurs.csv',
-        'transform_occupation_gares.csv',
-        'transform_ponctualite_globale_tgv.csv',
-        'transform_ponctualite_tgv_par_route.csv'
-    ])
+    data = task_instance.xcom_pull(task_ids=f"transform_{kwargs['file']}")
 
-    # Save files
-    for file, data in zip(['gares_de_voyageurs.csv', 'occupation_gares.csv', 'ponctualite_globale_tgv.csv', 'ponctualite_tgv_par_route.csv'], [gares_de_voyageurs, occupation_gares, ponctualite_globale_tgv, ponctualite_tgv_par_route]):
-        with open(os.path.join(clean_storage_path, file), 'w') as f:
-            json.dump(data, f)
-        logging.info(f"{file} data saved in {clean_storage_path}")
+
+    # Save file
+    with open(os.path.join(clean_storage_path, kwargs['file']), 'w') as f:
+        json.dump(data, f)
+    logging.info(f"{kwargs['file']} data saved in {clean_storage_path}")
