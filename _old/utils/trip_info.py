@@ -13,7 +13,7 @@ import os
 import pandas as pd
 from typing import Optional
 
-from data_updater import load_cleaned_feed_df
+from _old_utils.utils.data_updater import load_cleaned_feed_df
 
 
 

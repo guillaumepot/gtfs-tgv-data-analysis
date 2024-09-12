@@ -54,4 +54,3 @@ remove_xcoms = PythonOperator(
     Call a function to cleanup all XComs from the Airflow database.
     """
     )
-
