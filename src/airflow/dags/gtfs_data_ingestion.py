@@ -1,257 +1,193 @@
 """
-DAG GTFS Real-Time Ingestion
+This DAG is responsible for getting GTFS data from various sources, processing them, and storing them in a database.
 """
 
 
 # LIB
 from airflow import DAG
 from airflow.utils.dates import days_ago
-from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.operators.dagrun_operator import TriggerDagRunOperator
+from airflow.sensors.filesystem import FileSensor
 
 
 import datetime
 import os
 
-# task functions
-from gtfs_data_ingestion_functions import get_gtfs_rt_data, transform_feed, push_feed_data_to_db
-
+# Task functions
+from gtfs_data_ingestion_functions import get_gtfs_files, data_cleaner, ingest_gtfs_data_to_database
+from common_functions import clear_raw_files, load_url, load_df_from_file
 
 
 # VARS
-dag_scheduler = os.getenv('GTFS_RT_INGESTION_SCHEDULER', None)
+dag_scheduler = os.getenv('GTFS_INGESTION_SCHEDULER', None)
+gtfs_storage_path = "/opt/airflow/storage/gtfs/"
+gtfs_url = load_url("gtfs_url")
+
+
+
+
+# Define the expected files the GTFS feed should have
+expected_files = [
+    "calendar_dates.txt",
+    "routes.txt",
+    "stops.txt",
+    "stop_times.txt",
+    "trips.txt"
+]
 
 
 # DAG
-gtfs_rt_ingestion_dag = DAG(
-    dag_id = "gtfs_rt_ingestion_dag",
-    description = 'Get GTFS & GTFS-RT data from different sources, process them and store them in a database',
-    tags = ['gtfs', 'gtfs-rt', 'ingestion', 'database'],
+gtfs_ingestion_dag = DAG(
+    dag_id = "gtfs_ingestion_dag",
+    description = 'Get GTFS data from various sources, process them and store them in a database',
+    tags = ['gtfs', 'download', 'files', 'data', 'ingestion', 'database'],
     catchup = False,
     schedule_interval =  dag_scheduler,
     start_date = days_ago(1),
     doc_md = """
-    # DAG Documentation: GTFS RT Ingestion DAG
-
-    ## Description
-    The `gtfs_rt_ingestion_dag` is designed to fetch, process, and store GTFS and GTFS-RT data from various sources into a database. This DAG consists of multiple tasks that handle different stages of the data ingestion process.
-
-    ## DAG Configuration
-    - **DAG ID:** `gtfs_rt_ingestion_dag`
-    - **Description:** Get GTFS & GTFS-RT data from different sources, process them and store them in a database.
-    - **Tags:** `gtfs`, `gtfs-rt`, `ingestion`, `database`
-    - **Catchup:** `False`
-    - **Schedule Interval:** `{{ dag_scheduler }}`
-    - **Start Date:** `{{ days_ago(1) }}`
-    - **Documentation:**
-        ```markdown
-        # WIP
-        ```
-
-    ## Tasks
-
-    ### 1. Get Feed GTFS RT
-    - **Task ID:** `get_feed_gtfs_rt`
-    - **Operator:** `PythonOperator`
-    - **Function:** `get_gtfs_rt_data`
-    - **Parameters:**
-    - `gtfs_rt_url`: "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates"
-    - **Retries:** `2`
-    - **Retry Delay:** `30 seconds`
-    - **Trigger Rule:** `dummy`
-    - **Documentation:**
-        ```markdown
-        ### Task Documentation: get_feed_gtfs_rt
-
-        This task is responsible for fetching GTFS-RT data from the specified URL and processing it.
-
-        **Parameters:**
-        - `gtfs_rt_url` (str): The URL to fetch the GTFS-RT data from. In this case, it is set to "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates".
-
-        **Retries:**
-        - The task will retry 2 times in case of failure, with a delay of 30 seconds between retries.
-
-        **Trigger Rule:**
-        - The task uses the 'dummy' trigger rule.
-
-        **Callbacks:**
-        - No specific callbacks are defined for success or failure.
-
-        **Functionality:**
-        - The task calls the `get_gtfs_rt_data` function to fetch and process the GTFS-RT data, converting it into a JSON string.
-        ```
-
-    ### 2. Transform Feed GTFS RT
-    - **Task ID:** `transform_feed_gtfs_rt`
-    - **Operator:** `PythonOperator`
-    - **Function:** `transform_feed`
-    - **Provide Context:** `True`
-    - **Trigger Rule:** `all_success`
-    - **Documentation:**
-        ```markdown
-        ### Task Documentation: transform_feed_gtfs_rt
-
-        This task is responsible for transforming the GTFS Real-Time feed data into a list of trip data and stop times data.
-
-        **Parameters:**
-        - `provide_context` (bool): When set to True, Airflow will pass a set of keyword arguments that can be used in the function. This includes the `task_instance` which is used to pull XCom values.
-
-        **Trigger Rule:**
-        - The task uses the 'all_success' trigger rule, meaning it will only run if all upstream tasks have succeeded.
-
-        **Callbacks:**
-        - No specific callbacks are defined for success or failure.
-
-        **Functionality:**
-        - The task calls the `transform_feed` function to process the GTFS Real-Time feed data.
-        - It retrieves the feed data from XCom, converts it from JSON string to dictionary, and processes it to extract trip data and stop times data.
-        - The processed data is returned as two lists: `all_trip_data` and `all_stop_times_data`.
-        ```
-
-    ### 3. Push Trip Data to DB
-    - **Task ID:** `push_trip_data_to_db`
-    - **Operator:** `PythonOperator`
-    - **Function:** `push_feed_data_to_db`
-    - **Provide Context:** `True`
-    - **Parameters:**
-    - `table`: `trips_gtfs_rt`
-    - **Retries:** `3`
-    - **Retry Delay:** `20 seconds`
-    - **Trigger Rule:** `all_success`
-    - **Documentation:**
-        ```markdown
-        ### Task Documentation: push_trip_data_to_db
-
-        This task is responsible for pushing trip data to the `trips_gtfs_rt` table in the PostgreSQL database.
-
-        **Parameters:**
-        - `table` (str): The name of the table to push data to. In this case, it is set to 'trips_gtfs_rt'.
-
-        **Retries:**
-        - The task will retry 3 times in case of failure, with a delay of 20 seconds between retries.
-
-        **Trigger Rule:**
-        - The task uses the 'all_success' trigger rule, meaning it will only run if all upstream tasks have succeeded.
-
-        **Callbacks:**
-        - No specific callbacks are defined for success or failure.
-
-        **Functionality:**
-        - The task calls the `push_feed_data_to_db` function to push trip data to the PostgreSQL database.
-        - It retrieves the trip data from XCom and inserts or updates the data in the `trips_gtfs_rt` table.
-        ```
-
-    ## Task Dependencies
-    The tasks are executed in the following order:
-    1. `get_feed_gtfs_rt` >> `transform_feed_gtfs_rt` >> `push_trip_data_to_db`
-            """)
+    # GTFS Data Ingestion DAG
+    This DAG is responsible for downloading GTFS data from various sources, processing the data, and storing it in a database.
+    The DAG includes tasks for downloading files, checking their existence, loading them into dataframes, transforming the data, and ingesting it into the database.
+    """
+)
 
 
-### TASKS ###
 
-
-# GTFS RT TASKS
-get_feed_gtfs_rt = PythonOperator(
-    task_id = 'get_feed_gtfs_rt',
-    dag = gtfs_rt_ingestion_dag,
-    python_callable = get_gtfs_rt_data,
-    op_kwargs = {'gtfs_rt_url':"https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates"},
-    retries = 2,
-    retry_delay = datetime.timedelta(seconds=30),
+# Download files
+get_gtfs_files = PythonOperator(
+    task_id = 'get_gtfs_files',
+    dag = gtfs_ingestion_dag,
+    python_callable = get_gtfs_files,
+    op_kwargs = {'gtfs_url': gtfs_url,
+                 'gtfs_storage_path':gtfs_storage_path},
+    retries = 3,
+    retry_delay = datetime.timedelta(seconds=300),
     on_failure_callback=None,
     on_success_callback=None,
     trigger_rule='dummy',
     doc_md = """
-    ### Task Documentation: get_feed_gtfs_rt
-
-    This task is responsible for fetching GTFS-RT data from the specified URL and processing it.
-
-    **Parameters:**
-    - `gtfs_rt_url` (str): The URL to fetch the GTFS-RT data from. In this case, it is set to "https://proxy.transport.data.gouv.fr/resource/sncf-tgv-gtfs-rt-trip-updates".
-
-    **Retries:**
-    - The task will retry 2 times in case of failure, with a delay of 30 seconds between retries.
-
-    **Trigger Rule:**
-    - The task uses the 'dummy' trigger rule.
-
-    **Callbacks:**
-    - No specific callbacks are defined for success or failure.
-
-    **Functionality:**
-    - The task calls the `get_gtfs_rt_data` function to fetch and process the GTFS-RT data, converting it into a JSON string.
+    # Download GTFS Files
+    This task downloads GTFS files from the specified URL and stores them in the designated storage path.
     """
     )
 
 
-transform_feed_gtfs_rt = PythonOperator(
-    task_id = 'transform_feed_gtfs_rt',
-    dag = gtfs_rt_ingestion_dag,
-    python_callable = transform_feed,
-    provide_context=True,
-    #retries = 0,
-    #retry_delay = datetime.timedelta(seconds=30),
+
+# Start parallel tasks for each file
+file_sensors = []
+df_loaders = []
+data_transformers = []
+data_ingesters = []
+
+
+for file_name in expected_files:
+
+    # Sensors: Check if the files are downloaded
+    file_sensor = FileSensor(
+        task_id=f"check_{file_name}",
+        dag=gtfs_ingestion_dag, 
+        fs_conn_id="fs_default",
+        filepath=f'{gtfs_storage_path}{file_name}',
+        poke_interval=60,
+        timeout=180,
+        mode='reschedule',
+        trigger_rule='all_success',
+        doc_md=f"""
+        # Check File: {file_name}
+        This task checks if the file {file_name} has been downloaded to the storage path.
+        """
+    )
+    file_sensors.append(file_sensor)
+
+
+    # Load the files into DF
+    df_loader = PythonOperator(
+        task_id=f'load_{file_name}',
+        dag=gtfs_ingestion_dag,
+        python_callable=load_df_from_file,
+        op_kwargs={'filepath': gtfs_storage_path + file_name},
+        retries=1,
+        retry_delay=datetime.timedelta(seconds=90),
+        on_failure_callback=None,
+        on_success_callback=None,
+        trigger_rule='none_failed',
+        doc_md=f"""
+        # Load File: {file_name}
+        This task loads the file {file_name} into a dataframe for further processing.
+        """
+    )
+    df_loaders.append(df_loader)
+
+
+
+    # Remove .txt extension; this will be used as the base name for the file
+    file_base_name = file_name.split('.')[0]  
+
+
+    # Transform data
+    data_transformer = PythonOperator(
+        task_id=f'transform_{file_base_name}',
+        dag=gtfs_ingestion_dag,
+        python_callable=data_cleaner,
+        provide_context=True,
+        op_kwargs={'file': file_base_name},
+        retries=1,
+        retry_delay=datetime.timedelta(seconds=30),
+        on_failure_callback=None,
+        on_success_callback=None,
+        trigger_rule='none_failed',
+        doc_md=f"""
+        # Transform Data: {file_base_name}
+        This task transforms the data in the file {file_base_name} to prepare it for ingestion into the database.
+        """
+    )
+    data_transformers.append(data_transformer)
+
+
+    # Ingest data into the database
+    data_ingestion= PythonOperator(
+        task_id=f'ingest_{file_base_name}',
+        dag=gtfs_ingestion_dag,
+        python_callable=ingest_gtfs_data_to_database,
+        provide_context=True,
+        op_kwargs={'file': file_base_name},
+        retries=3,
+        retry_delay=datetime.timedelta(seconds=120),
+        on_failure_callback=None,
+        on_success_callback=None,
+        trigger_rule='all_success',
+        doc_md=f"""
+        # Ingest Data: {file_base_name}
+        This task ingests the transformed data from the file {file_base_name} into the database.
+        """
+    )
+    data_ingesters.append(data_ingestion)
+
+
+
+# Clear raw files
+clear_raw_files = PythonOperator(
+    task_id='clear_raw_files',
+    dag=gtfs_ingestion_dag,
+    python_callable=clear_raw_files,
+    op_kwargs={'storage_path': gtfs_storage_path},
+    retries=1,
+    retry_delay=datetime.timedelta(seconds=180),
     on_failure_callback=None,
     on_success_callback=None,
-    trigger_rule='all_success',
-    doc_md = """
-    ### Task Documentation: transform_feed_gtfs_rt
-
-    This task is responsible for transforming the GTFS Real-Time feed data into a list of trip data and stop times data.
-
-    **Parameters:**
-    - `provide_context` (bool): When set to True, Airflow will pass a set of keyword arguments that can be used in the function. This includes the `task_instance` which is used to pull XCom values.
-
-    **Trigger Rule:**
-    - The task uses the 'all_success' trigger rule, meaning it will only run if all upstream tasks have succeeded.
-
-    **Callbacks:**
-    - No specific callbacks are defined for success or failure.
-
-    **Functionality:**
-    - The task calls the `transform_feed` function to process the GTFS Real-Time feed data.
-    - It retrieves the feed data from XCom, converts it from JSON string to dictionary, and processes it to extract trip data and stop times data.
-    - The processed data is returned as two lists: `all_trip_data` and `all_stop_times_data`.
+    trigger_rule='all_done',
+    doc_md="""
+    # Clear Raw Files
+    This task clears all raw files stored by the get_gtfs_files task.
     """
-    )
-
-
-push_trip_data_to_db = PythonOperator(
-    task_id = 'push_trip_data_to_db',
-    dag = gtfs_rt_ingestion_dag,
-    python_callable = push_feed_data_to_db,
-    provide_context=True,
-    op_kwargs = {'table': 'trips_gtfs_rt'},
-    retries = 3,
-    retry_delay = datetime.timedelta(seconds=20),
-    on_failure_callback=None,
-    on_success_callback=None,
-    trigger_rule='all_success',
-    doc_md = """
-    ### Task Documentation: push_trip_data_to_db
-
-    This task is responsible for pushing trip data to the `trips_gtfs_rt` table in the PostgreSQL database.
-
-    **Parameters:**
-    - `table` (str): The name of the table to push data to. In this case, it is set to 'trips_gtfs_rt'.
-
-    **Retries:**
-    - The task will retry 3 times in case of failure, with a delay of 20 seconds between retries.
-
-    **Trigger Rule:**
-    - The task uses the 'all_success' trigger rule, meaning it will only run if all upstream tasks have succeeded.
-
-    **Callbacks:**
-    - No specific callbacks are defined for success or failure.
-
-    **Functionality:**
-    - The task calls the `push_feed_data_to_db` function to push trip data to the PostgreSQL database.
-    - It retrieves the trip data from XCom and inserts or updates the data in the `trips_gtfs_rt` table.
-    """
-    )
+)
 
 
 
 # DEPENDENCIES
-get_feed_gtfs_rt >> transform_feed_gtfs_rt >> push_trip_data_to_db
+get_gtfs_files >> file_sensors
+
+for file_sensor, df_loader, data_transformer, data_ingestion in zip(file_sensors, df_loaders, data_transformers, data_ingesters):
+    file_sensor >> df_loader >> data_transformer >> data_ingestion
+
+data_ingesters >> clear_raw_files

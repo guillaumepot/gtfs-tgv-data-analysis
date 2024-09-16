@@ -1,0 +1,310 @@
+# Airflow docker compose.
+# - Contains services for Airflow webserver, scheduler, worker, triggerer, and initialization.
+
+
+# COMMON VARS
+x-airflow-common: &airflow-common
+
+  # Airflow image to use, AIRFLOW_IMAGE_NAME is set in the .env file.
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
+
+
+  # Environment variables shared by all Airflow components.
+  environment:
+    &airflow-common-env
+
+
+    ### DEFAULT AIRFLOW ENVIRONMENT VARIABLES ###
+
+    # Use CeleryExecutor for distributed task execution.
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    # Connection string for Airflow's Postgres metadata database.
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    # Postgres to store task execution results for CeleryExecutor.
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    # Redis connection string for Celery to use as a message broker.
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    # Encryption key for sensitive data.
+    AIRFLOW__CORE__FERNET_KEY: ''
+    # Pause DAGs at creation.
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    # Disable loading of example DAGs.
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    # Authentication backends for the Airflow API.
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+
+    # Enable health check for the Airflow containers.
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Placeholder for additional pip requirements, if any.
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+
+
+    # Scraping parameters
+    # Path to the Selenium WebDriver, for use in web scraping DAGs.
+    # /!\ CRITICAL VAR - Do not change unless you know what you are doing.
+    # Change the path to the driver if needed. Scraping functions use firefox driver
+    #DRIVER_PATH: /opt/airflow/dags/geckodriver # <---- Path to the geckodriver
+
+
+    # Dags schedulers parameters
+    GTFS_RT_INGESTION_SCHEDULER: '* 5-23 * * *' # Every hour from 5am to 11pm
+    GTFS_INGESTION_SCHEDULER: '0 22 * * *' # At 22:00 every day
+    ETL_OPEN_DATA_FILES_SCHEDULER: '0 0 1 * *' # First day of each month
+    REMOVE_XCOMS_SCHEDULER: '0 3 * * *' # At 3:00 every day
+
+    # Database parameters
+    DATA_PG_HOST: train_delay_postgres
+    DATA_PG_PORT: 5432
+    DATA_PG_USER: postgres
+    DATA_PG_PASSWORD: changeme # <---- Change this password with postgres defined password
+    DATA_PG_DB: train_delay_db
+
+    # Define the fs_default connection (used for file sensors)
+    AIRFLOW_CONN_FS_DEFAULT: 'fs://:@/opt/airflow/storage/gtfs'
+
+
+
+  # Volume mappings for Airflow configurations
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+
+    - ${STORAGE_DIR}/raw:/opt/airflow/storage/raw
+    - ${STORAGE_DIR}/cleaned:/opt/airflow/storage/cleaned
+    - ${STORAGE_DIR}/gtfs:/opt/airflow/storage/gtfs
+
+
+  # Run Airflow with a specified user ID, defaulting to 50000.  
+  user: "${AIRFLOW_UID:-50000}:0"
+  # Airflow dependencies, ensuring that Postgres and Redis are healthy before starting.
+  depends_on:
+    &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
+
+
+
+### SERVICES
+
+services:
+
+  # Postgres
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    networks:
+      - airflow_default
+
+  # Redis
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
+    networks:
+      - airflow_default
+
+  # Webserver
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always 
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - airflow_default
+      - train_app_network
+  
+  # Scheduler
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - airflow_default
+      - train_app_network
+
+  # Worker
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    #ports:
+    #  - "5000:5000" # Port mapping is not typically required for workers   
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - airflow_default
+      - train_app_network
+
+  # Triggerer
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - airflow_default
+
+  # INIT
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        # Checks if the AIRFLOW_UID environment variable is set, warning if not. Important for Linux users to avoid file ownership issues.
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
+          echo "If you are on Linux, you SHOULD follow the instructions below to set "
+          echo "AIRFLOW_UID environment variable, otherwise files will be owned by root."
+          echo "For other operating systems you can get rid of the warning with manually created .env file:"
+          echo "    See: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#setting-the-right-airflow-user"
+          echo
+        fi
+        # Checks system resources (memory, CPU, disk space) to ensure they meet Airflow's minimum requirements. Warns if they don't.
+        one_meg=1048576
+        mem_available=$$(($$(getconf _PHYS_PAGES) * $$(getconf PAGE_SIZE) / one_meg))
+        cpus_available=$$(grep -cE 'cpu[0-9]+' /proc/stat)
+        disk_available=$$(df / | tail -1 | awk '{print $$4}')
+        warning_resources="false"
+        if (( mem_available < 4000 )) ; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough memory available for Docker.\e[0m"
+          echo "At least 4GB of memory required. You have $$(numfmt --to iec $$((mem_available * one_meg)))"
+          echo
+          warning_resources="true"
+        fi
+        if (( cpus_available < 2 )); then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough CPUS available for Docker.\e[0m"
+          echo "At least 2 CPUs recommended. You have $${cpus_available}"
+          echo
+          warning_resources="true"
+        fi
+        if (( disk_available < one_meg * 10 )); then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough Disk space available for Docker.\e[0m"
+          echo "At least 10 GBs recommended. You have $$(numfmt --to iec $$((disk_available * 1024 )))"
+          echo
+          warning_resources="true"
+        fi
+        if [[ $${warning_resources} == "true" ]]; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: You have not enough resources to run Airflow (see above)!\e[0m"
+          echo "Please follow the instructions to increase amount of resources available:"
+          echo "   https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#before-you-begin"
+          echo
+        fi
+
+        # Creates directories for logs, DAGs, and plugins, then sets the ownership to the AIRFLOW_UID user.
+        # This step is essential for ensuring that Airflow can access these directories.
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+
+        # Executes the Airflow version command to verify installation. This also implicitly checks if the Airflow entrypoint script is correctly configured.
+        exec /entrypoint airflow version
+    
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true' # Indicates that database migrations should be performed.
+      _AIRFLOW_WWW_USER_CREATE: 'true' # Indicates the creation of a default webserver user.
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
+    user: "0:0" # Runs as root to perform initial setup tasks.
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}:/sources # Mounts the project directory for access by the init service.
+    networks:
+      - airflow_default
+
+
+  # Airflow CLI service
+  airflow-cli:
+    <<: *airflow-common
+    profiles:
+      - debug
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    command:
+      - bash
+      - -c
+      - airflow
+    networks:
+      - airflow_default
+
+# Defines a volume for Postgres data persistence, ensuring data is not lost between container restarts.
+volumes:
+  postgres-db-volume:
+
+networks:
+  airflow_default:
+    driver: bridge
+  train_app_network:
+    external: true

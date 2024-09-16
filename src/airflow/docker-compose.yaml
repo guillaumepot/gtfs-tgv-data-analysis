@@ -48,7 +48,9 @@ x-airflow-common: &airflow-common
 
     # Dags schedulers parameters
     GTFS_RT_INGESTION_SCHEDULER: '* 5-23 * * *' # Every hour from 5am to 11pm
-
+    GTFS_INGESTION_SCHEDULER: '0 22 * * *' # At 22:00 every day
+    ETL_OPEN_DATA_FILES_SCHEDULER: '0 0 1 * *' # First day of each month
+    REMOVE_XCOMS_SCHEDULER: '0 3 * * *' # At 3:00 every day
 
     # Database parameters
     DATA_PG_HOST: train_delay_postgres
@@ -58,6 +60,11 @@ x-airflow-common: &airflow-common
     DATA_PG_DB: train_delay_db
 
 
+    # Define the fs_default connection (used for file sensors)
+    AIRFLOW_CONN_FS_DEFAULT: 'fs://:@/opt/airflow/storage/gtfs'
+
+
+
   # Volume mappings for Airflow configurations
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
@@ -65,9 +72,9 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
 
-    - ${STORAGE_DIR}/raw:/opt/airflow/data/raw
-    - ${STORAGE_DIR}/cleaned:/opt/airflow/data/cleaned
-    - ${STORAGE_DIR}/gtfs:/opt/airflow/data/gtfs
+    - ${STORAGE_DIR}/raw:/opt/airflow/storage/raw
+    - ${STORAGE_DIR}/cleaned:/opt/airflow/storage/cleaned
+    - ${STORAGE_DIR}/gtfs:/opt/airflow/storage/gtfs
 
 
   # Run Airflow with a specified user ID, defaulting to 50000.  
