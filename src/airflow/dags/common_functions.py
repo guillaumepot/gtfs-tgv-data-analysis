@@ -65,6 +65,9 @@ def load_df_from_file(**kwargs) -> dict:
     except pd.errors.ParserError as e:
         logging.error(f"Error parsing CSV file: {e}")
         raise Exception(f"Error parsing CSV file: {e}")
+    else:
+        # Convert the dataframe to a JSON string
+        return df.to_json(orient='records')
 
 
 
