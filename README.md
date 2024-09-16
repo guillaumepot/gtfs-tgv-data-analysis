@@ -24,7 +24,7 @@ This project covers Data engineering, Datascience & Mlops.
 
 ## Project Information
 
-- **Version**: 0.0.3
+- **Version**: 0.0.4
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
 
@@ -237,7 +237,6 @@ You should have this tree:
 ### Branch Policy
 
 ``` yaml
-
 ├── main    # Main branch, contains releases
 |   
 ├── build   # Used to build releases  (eg: build-0.0.3)
@@ -245,13 +244,13 @@ You should have this tree:
 ├── debug   # Debug branch  (eg: debug-0.0.4)
 |
 └── develop # New features development branch (eg: dev-0.0.4)
-
 ```
 
 
 
 ### Changelogs
 
+[v0.0.4](./changelogs/0.0.3.md)
 [v0.0.3](./changelogs/0.0.3.md)
 [v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
@@ -261,17 +260,13 @@ You should have this tree:
 ### Roadmap
 
 ```
-0.1.0
 - Get next trains from a station script
 - Display a train informations script + Train itinary map | Station & train routes graph
 
-0.2.0
 - Station & lines graph (Neo4J DB)
 
-0.3.0
 - BI board -> data analysis
 
-1.1.0
 - Train delay prediction (classification)
 - Train time delay prediction (regression)
 ```
