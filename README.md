@@ -20,6 +20,8 @@ This project covers Data engineering, Datascience & Mlops.
 - Get & update (every hours) GTFS Real Time datas, add these datas to a postgres Database.
 - Get & update analytics files from open data, store them in a storage as csv files.
 
+- Get informations about a trip or display next trains (departure | arrival) in a station through a script
+
 
 
 ## Project Information
@@ -78,8 +80,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 
 ### Storage
-
-
 
 - Create a storage folder to store datas
     - Airflow volume needs these directories : raw | clean | gtfs
@@ -225,6 +225,10 @@ You should have this tree:
 |    |
 |    └── unit_tests                     # Unit tests files
 |
+├── utils                            # Scripts that can be used as standalone
+|     |
+|     └── get_trip_informations.py   # Returns informations about a trip or a station
+|
 ├── .gitignore
 |
 ├── LICENSE
@@ -324,8 +328,6 @@ GTFS RT datas are updated every 5 minutes.
 GTFS datas are updated once a day.
 
 <img src="./media/PostgresDiagram.png">
-
-
 
 
 
