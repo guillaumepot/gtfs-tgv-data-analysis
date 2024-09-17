@@ -20,11 +20,13 @@ This project covers Data engineering, Datascience & Mlops.
 - Get & update (every hours) GTFS Real Time datas, add these datas to a postgres Database.
 - Get & update analytics files from open data, store them in a storage as csv files.
 
+- Get informations about a trip or display next trains (departure | arrival) in a station through a script
+
 
 
 ## Project Information
 
-- **Version**: 0.0.3
+- **Version**: 0.0.4
 - **Development Stage**: Dev
 - **Author**: Guillaume Pot
 
@@ -78,8 +80,6 @@ GTFS is supported around the world and its use, importance, and scope has been i
 
 
 ### Storage
-
-
 
 - Create a storage folder to store datas
     - Airflow volume needs these directories : raw | clean | gtfs
@@ -225,6 +225,10 @@ You should have this tree:
 |    |
 |    └── unit_tests                     # Unit tests files
 |
+├── utils                            # Scripts that can be used as standalone
+|     |
+|     └── get_train_info.py   # Returns informations about a trip or a station
+|
 ├── .gitignore
 |
 ├── LICENSE
@@ -237,7 +241,6 @@ You should have this tree:
 ### Branch Policy
 
 ``` yaml
-
 ├── main    # Main branch, contains releases
 |   
 ├── build   # Used to build releases  (eg: build-0.0.3)
@@ -245,13 +248,13 @@ You should have this tree:
 ├── debug   # Debug branch  (eg: debug-0.0.4)
 |
 └── develop # New features development branch (eg: dev-0.0.4)
-
 ```
 
 
 
 ### Changelogs
 
+[v0.0.4](./changelogs/0.0.3.md)
 [v0.0.3](./changelogs/0.0.3.md)
 [v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
@@ -261,17 +264,13 @@ You should have this tree:
 ### Roadmap
 
 ```
-0.1.0
 - Get next trains from a station script
 - Display a train informations script + Train itinary map | Station & train routes graph
 
-0.2.0
 - Station & lines graph (Neo4J DB)
 
-0.3.0
 - BI board -> data analysis
 
-1.1.0
 - Train delay prediction (classification)
 - Train time delay prediction (regression)
 ```
@@ -329,8 +328,6 @@ GTFS RT datas are updated every 5 minutes.
 GTFS datas are updated once a day.
 
 <img src="./media/PostgresDiagram.png">
-
-
 
 
 
