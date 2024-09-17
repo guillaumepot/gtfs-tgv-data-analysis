@@ -265,8 +265,7 @@ You should have this tree:
 ### Roadmap
 
 ```
-- Get next trains from a station script
-- Display a train informations script + Train itinary map | Station & train routes graph
+- Train itinary map
 
 - Station & lines graph (Neo4J DB)
 

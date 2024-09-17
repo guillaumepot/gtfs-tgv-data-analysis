@@ -3,11 +3,11 @@
 
 # Lib
 from datetime import datetime
+import folium
 from google.transit import gtfs_realtime_pb2
 import json
 import os
 import pandas as pd
-from pprint import pprint
 import requests
 import shutil
 import zipfile
@@ -169,6 +169,7 @@ def updater():
     # Task 1
     print("Starting GTFS Data Fetching and cleaning...")
     get_gtfs_files()
+    stops = pd.read_csv(temp_dir + "stops.txt")
     stop_dict, trip_dict = get_conversion_dictionaries()
     print("GTFS Data Fetching and cleaning done.")
 
@@ -186,7 +187,7 @@ def updater():
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
 
-    return feed, feed_df, cleaned_feed_df, stop_dict, trip_dict
+    return feed, feed_df, cleaned_feed_df, stop_dict, trip_dict, stops
 
 
 # Func - save_datas
@@ -307,10 +308,46 @@ def get_train_informations(cleaned_feed_df:pd.DataFrame, train_nb:int, departure
     return df
 
 
+# Func - generate_map
+def generate_map(df:pd.DataFrame, stops:pd.DataFrame, train_nb:int) -> None:
+    """
+    Generate a map with the train stops
+    """
+    # Getting map center
+    center_lat = stops['stop_lat'].mean()
+    center_lon = stops['stop_lon'].mean()
+    map = folium.Map(location=[center_lat, center_lon], zoom_start=6)
+
+    # Add markers for each stop
+    train_stops = df['Stop Name'].unique()
+    stop_datas = []
+    for stop in train_stops:
+        stop_lat = stops[stops['stop_name'] == stop]['stop_lat'].values[0]
+        stop_lon = stops[stops['stop_name'] == stop]['stop_lon'].values[0]
+        stop_datas.append([stop, stop_lat, stop_lon])
+
+    stops_datas_df = pd.DataFrame(stop_datas, columns=['stop_name', 'stop_lat', 'stop_lon'])
+
+    for idx, row in stops_datas_df.iterrows():
+        folium.Marker(
+            location=[row['stop_lat'], row['stop_lon']],
+            popup=row['stop_name'],
+            tooltip=row['stop_name']
+        ).add_to(map)
+
+    # Add lines connecting the stops
+    coordinates = stops_datas_df[['stop_lat', 'stop_lon']].values.tolist()
+    folium.PolyLine(locations=coordinates, color='blue').add_to(map)
+
+    # Save the map to an HTML file
+    map.save(f'{train_nb}_map.html')                      
+
+
+
 
 if __name__ == "__main__":
     print("Starting updater process...")
-    feed, feed_df, cleaned_feed_df, stop_dict, trip_dict = updater()
+    feed, feed_df, cleaned_feed_df, stop_dict, trip_dict, stops = updater()
 
     try:
         print("Updated datas available, do you want to save them ? (y/n)")
@@ -335,7 +372,6 @@ if __name__ == "__main__":
             action_choice = int(input("Choose an action:\n"
                                     "1. Get next trains for a specific station\n"
                                     "2. Get train information for a specific train number and departure date\n"))
-
 
             if action_choice == 1:
                 pass
@@ -365,6 +401,15 @@ if __name__ == "__main__":
                 print("Loading train information:", train_nb, departure_date)
                 df = get_train_informations(cleaned_feed_df, train_nb, departure_date)
                 print(df)
+
+                print("Generate map? (y/n)")
+                map_choice = input()
+                if map_choice == "y":
+                    print("Generating map")
+                    generate_map(df, stops, train_nb)
+
+                else:
+                    print("Skipping map generation")
 
             else:
                 raise ValueError("Invalid action choice")
