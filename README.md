@@ -227,7 +227,7 @@ You should have this tree:
 |
 ├── utils                            # Scripts that can be used as standalone
 |     |
-|     └── get_trip_informations.py   # Returns informations about a trip or a station
+|     └── get_train_info.py   # Returns informations about a trip or a station
 |
 ├── .gitignore
 |
