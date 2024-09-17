@@ -254,7 +254,8 @@ You should have this tree:
 
 ### Changelogs
 
-[v0.0.4](./changelogs/0.0.3.md)
+[v0.2.0](./changelogs/0.2.0.md)
+[v0.1.0](./changelogs/0.1.0.md)
 [v0.0.3](./changelogs/0.0.3.md)
 [v0.0.2](./changelogs/0.0.2.md)
 [v0.0.1](./changelogs/0.0.1.md)
