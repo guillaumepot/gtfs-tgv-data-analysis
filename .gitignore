@@ -13,3 +13,6 @@ src/airflow/logs/
 src/airflow/dags/__pycache__/
 src/airflow/dags/.ipynb_checkpoints/
 src/airflow/dags/.DS_Store
+
+# Ignore gtfs & gtfs rt save datas
+savre_datas/
